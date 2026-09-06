@@ -64,4 +64,13 @@ describe("富文本辅助纯函数", () => {
       "第一行\n第二行\n项",
     );
   });
+
+  it("textToRichText 转义用户输入的 < 与 &，避免被当标签", () => {
+    expect(textToRichText("C++ < 2020 & Co")).toBe("<p>C++ &lt; 2020 &amp; Co</p>");
+  });
+
+  it("richTextToPlain->textToRichText：单行换行变 <br>，空白行分段变 <p>", () => {
+    const html = "<p>第一段</p><p>第二段<br>续</p>";
+    expect(textToRichText(richTextToPlain(html))).toBe("<p>第一段<br>第二段<br>续</p>");
+  });
 });

@@ -4,6 +4,7 @@ import { localizedText } from "@/shared/lib/localized";
 import type { Locale } from "@/entities/locale";
 import type { ResumeSection, SectionKind } from "@/entities/resume/model";
 import { Input, Textarea } from "@/shared/ui/input";
+import { richTextToPlain, textToRichText } from "@/shared/lib/sanitize";
 import { Button, IconButton } from "@/shared/ui/button";
 import { Switch } from "@/shared/ui/switch";
 import { DropdownMenu } from "@/shared/ui/dropdown";
@@ -229,8 +230,8 @@ function ItemsEditor({
             <Textarea
               className="min-h-16 text-xs"
               placeholder={t("edit.summaryPlaceholder")}
-              value={localizedText(it.description, locale)}
-              onChange={(e) => updateDesc(sectionId, it.id, locale, e.target.value)}
+              value={richTextToPlain(localizedText(it.description, locale))}
+              onChange={(e) => updateDesc(sectionId, it.id, locale, textToRichText(e.target.value))}
             />
           </div>
         </div>

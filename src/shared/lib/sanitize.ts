@@ -50,13 +50,18 @@ export function resetRichFormat(dirty: string): string {
   });
 }
 
-/** 将纯文本转为保留分段结构的富文本（换行 -> 段落） */
+/** 转义纯文本中的 HTML 特殊字符，避免用户输入被当作标签解析 */
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/** 将纯文本转为保留分段结构的富文本（换行 -> 段落），先转义再包裹 */
 export function textToRichText(text: string): string {
   const trimmed = text.replace(/\r\n/g, "\n").trim();
   if (!trimmed) return "";
   const blocks = trimmed.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
   return blocks
-    .map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`)
+    .map((p) => `<p>${escapeHtml(p).replace(/\n/g, "<br>")}</p>`)
     .join("");
 }
 
