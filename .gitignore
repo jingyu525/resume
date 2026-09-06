@@ -5,6 +5,9 @@ node_modules/
 dist/
 *.tsbuildinfo
 
+# 测试覆盖率报告（vitest v8 生成，非源码）
+coverage/
+
 # 日志
 *.log
 npm-debug.log*
