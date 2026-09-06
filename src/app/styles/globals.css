@@ -1,0 +1,245 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+:root {
+  --radius: 0.75rem;
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+  --primary: 221 83% 53%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 221 83% 53%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 221 83% 53%;
+}
+
+.dark {
+  --background: 222 47% 7%;
+  --foreground: 210 40% 98%;
+  --card: 222 40% 10%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222 40% 10%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 217 91% 60%;
+  --primary-foreground: 222 47% 11%;
+  --secondary: 217 33% 17%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217 33% 17%;
+  --muted-foreground: 215 20% 65%;
+  --accent: 217 91% 60%;
+  --accent-foreground: 222 47% 11%;
+  --destructive: 0 63% 31%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217 33% 20%;
+  --input: 217 33% 20%;
+  --ring: 217 91% 60%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* A4 页面常量（打印与预览共用） */
+.a4-page {
+  width: 210mm;
+  min-height: 297mm;
+  background: #fff;
+  color: #111;
+  box-sizing: border-box;
+}
+
+/* ====== 简历文档（预览 / 打印共用，单一真源渲染） ====== */
+.rs-doc {
+  font-family: var(--rs-body-font);
+  font-size: var(--rs-font-size);
+  line-height: var(--rs-line-height);
+  color: #111;
+  padding: var(--rs-margin);
+  padding-bottom: calc(var(--rs-margin) + var(--rs-safe));
+}
+.rs-em {
+  color: var(--rs-accent);
+}
+.rs-name {
+  font-family: var(--rs-heading-font);
+  font-weight: var(--rs-heading-weight);
+  font-size: 1.9em;
+  line-height: 1.1;
+  color: #111;
+}
+.rs-jobtitle {
+  color: var(--rs-accent);
+  font-weight: 600;
+  margin-top: 2px;
+}
+.rs-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 14px;
+  margin-top: 6px;
+  font-size: 0.9em;
+  color: #333;
+}
+.rs-contact span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.rs-section {
+  margin-bottom: var(--rs-section-gap);
+}
+.rs-section-title {
+  font-family: var(--rs-heading-font);
+  font-weight: var(--rs-heading-weight);
+  color: var(--rs-accent);
+  border-bottom: 1.5px solid var(--rs-accent);
+  padding-bottom: 2px;
+  margin-bottom: var(--rs-gap);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 1.05em;
+}
+.rs-item {
+  margin-bottom: var(--rs-gap);
+  break-inside: avoid;
+}
+.rs-item-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: baseline;
+}
+.rs-item-title {
+  font-weight: 600;
+  color: #111;
+}
+.rs-item-sub {
+  color: #444;
+}
+.rs-item-date {
+  color: #666;
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+.rs-desc {
+  margin-top: 3px;
+}
+.rs-desc p {
+  margin: 0 0 4px;
+}
+.rs-skill-group {
+  margin-bottom: var(--rs-gap);
+}
+.rs-skill-name {
+  font-weight: 600;
+  color: var(--rs-accent);
+}
+.rs-skill-items {
+  margin-top: 2px;
+  color: #333;
+}
+.rs-sidebar {
+  font-size: 0.86em;
+}
+.rs-empty-hint {
+  color: #b9b9b9;
+  font-style: italic;
+}
+[contenteditable] {
+  cursor: text;
+}
+[contenteditable]:focus {
+  outline: 1.5px dashed var(--rs-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.rs-editable:hover {
+  background: color-mix(in srgb, var(--rs-accent) 8%, transparent);
+  border-radius: 4px;
+}
+[contenteditable][data-placeholder]:empty:before {
+  content: attr(data-placeholder);
+  color: #b9b9b9;
+  font-style: italic;
+  pointer-events: none;
+}
+
+/* 打印：仅输出 A4 内容，隐藏屏幕专属元素 */
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

@@ -1,0 +1,309 @@
+import { useResumeStore } from "@/store/useResumeStore";
+import { useI18n } from "@/shared/i18n";
+import { localizedText } from "@/shared/lib/localized";
+import type { Locale } from "@/entities/locale";
+import type { ResumeSection, SectionKind } from "@/entities/resume/model";
+import { Input, Textarea } from "@/shared/ui/input";
+import { Button, IconButton } from "@/shared/ui/button";
+import { Switch } from "@/shared/ui/switch";
+import { DropdownMenu } from "@/shared/ui/dropdown";
+import {
+  Plus,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+
+const ADDABLE: SectionKind[] = ["summary", "experience", "project", "education", "skills"];
+
+/** 左编辑面板：基本信息 + 动态章节列表（增删改排序、隐藏、改标题、增删条目），FR-2 */
+export function EditPanel() {
+  const { t } = useI18n();
+  const locale = useResumeStore((s) => s.locale);
+  const basics = useResumeStore((s) => s.resume.basics);
+  const sections = useResumeStore((s) => s.resume.sections);
+  const updateLocalized = useResumeStore((s) => s.updateBasicLocalized);
+  const updatePlain = useResumeStore((s) => s.updateBasicPlain);
+  const addSection = useResumeStore((s) => s.addSection);
+
+  const ordered = [...sections].sort((a, b) => a.order - b.order);
+
+  return (
+    <div className="space-y-6 p-4">
+      <section>
+        <h3 className="mb-3 text-sm font-semibold">{t("edit.basic")}</h3>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label={t("edit.name")}>
+            <Input
+              value={localizedText(basics.name, locale)}
+              onChange={(e) => updateLocalized("name", locale, e.target.value)}
+            />
+          </Field>
+          <Field label={t("edit.jobTitle")}>
+            <Input
+              value={localizedText(basics.title, locale)}
+              onChange={(e) => updateLocalized("title", locale, e.target.value)}
+            />
+          </Field>
+          <Field label={t("edit.phone")}>
+            <Input value={basics.phone} onChange={(e) => updatePlain("phone", e.target.value)} />
+          </Field>
+          <Field label={t("edit.email")}>
+            <Input value={basics.email} onChange={(e) => updatePlain("email", e.target.value)} />
+          </Field>
+          <Field label={t("edit.city")}>
+            <Input
+              value={localizedText(basics.city, locale)}
+              onChange={(e) => updateLocalized("city", locale, e.target.value)}
+            />
+          </Field>
+          <Field label={t("edit.wechat")}>
+            <Input value={basics.wechat} onChange={(e) => updatePlain("wechat", e.target.value)} />
+          </Field>
+          <Field label={t("edit.website")} className="col-span-2">
+            <Input value={basics.website} onChange={(e) => updatePlain("website", e.target.value)} />
+          </Field>
+        </div>
+      </section>
+
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-sm font-semibold">{t("edit.sections")}</h3>
+          <DropdownMenu
+            align="end"
+            trigger={
+              <span className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1.5 text-sm text-primary-foreground hover:bg-primary/90">
+                <Plus size={15} /> {t("edit.addSection")}
+              </span>
+            }
+            items={ADDABLE.map((k) => ({
+              label: t(`sec.${k}`),
+              onClick: () => addSection(k),
+            }))}
+          />
+        </div>
+        <div className="space-y-3">
+          {ordered.map((sec, i) => (
+            <SectionCard key={sec.id} section={sec} index={i} total={ordered.length} locale={locale} />
+          ))}
+        </div>
+      </section>
+
+      <p className="text-xs text-muted-foreground">{t("edit.fillHint")}</p>
+    </div>
+  );
+}
+
+function SectionCard({
+  section,
+  index,
+  total,
+  locale,
+}: {
+  section: ResumeSection;
+  index: number;
+  total: number;
+  locale: Locale;
+}) {
+  const { t } = useI18n();
+  const moveSection = useResumeStore((s) => s.moveSection);
+  const removeSection = useResumeStore((s) => s.removeSection);
+  const toggleSection = useResumeStore((s) => s.toggleSection);
+  const renameSection = useResumeStore((s) => s.renameSection);
+  const addItem = useResumeStore((s) => s.addItem);
+  const addGroup = useResumeStore((s) => s.addGroup);
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-3">
+      <div className="mb-2 flex items-center gap-1.5">
+        <IconButton label={t("edit.up")} size="sm" onClick={() => moveSection(section.id, -1)} disabled={index === 0}>
+          <ArrowUp size={15} />
+        </IconButton>
+        <IconButton label={t("edit.down")} size="sm" onClick={() => moveSection(section.id, 1)} disabled={index === total - 1}>
+          <ArrowDown size={15} />
+        </IconButton>
+        <Input
+          className="h-8 flex-1 text-sm font-medium"
+          value={localizedText(section.title, locale)}
+          onChange={(e) => renameSection(section.id, locale, e.target.value)}
+          aria-label={t("edit.rename")}
+        />
+        <IconButton
+          label={section.visible ? t("edit.hide") : t("edit.show")}
+          size="sm"
+          onClick={() => toggleSection(section.id)}
+        >
+          {section.visible ? <Eye size={15} /> : <EyeOff size={15} />}
+        </IconButton>
+        <IconButton label={t("edit.delete")} size="sm" variant="ghost" onClick={() => removeSection(section.id)}>
+          <Trash2 size={15} />
+        </IconButton>
+      </div>
+
+      {section.kind === "skills" ? (
+        <GroupsEditor sectionId={section.id} groups={section.groups} locale={locale} />
+      ) : (
+        <ItemsEditor sectionId={section.id} items={section.items} locale={locale} />
+      )}
+
+      <Button
+        variant="subtle"
+        size="sm"
+        className="mt-2 w-full"
+        onClick={() => (section.kind === "skills" ? addGroup(section.id) : addItem(section.id))}
+      >
+        <Plus size={15} /> {section.kind === "skills" ? t("edit.addGroup") : t("edit.addItem")}
+      </Button>
+    </div>
+  );
+}
+
+function ItemsEditor({
+  sectionId,
+  items,
+  locale,
+}: {
+  sectionId: string;
+  items: ResumeSection["items"];
+  locale: Locale;
+}) {
+  const { t } = useI18n();
+  const updateLocalized = useResumeStore((s) => s.updateItemLocalized);
+  const updateDate = useResumeStore((s) => s.updateItemDate);
+  const updateDesc = useResumeStore((s) => s.updateItemDesc);
+  const removeItem = useResumeStore((s) => s.removeItem);
+  const moveItem = useResumeStore((s) => s.moveItem);
+
+  return (
+    <div className="space-y-2">
+      {items.map((it, i) => (
+        <div key={it.id} className="rounded-lg bg-secondary/50 p-2">
+          <div className="mb-1.5 flex items-center gap-1">
+            <IconButton label={t("edit.up")} size="sm" onClick={() => moveItem(sectionId, it.id, -1)} disabled={i === 0}>
+              <ArrowUp size={14} />
+            </IconButton>
+            <IconButton label={t("edit.down")} size="sm" onClick={() => moveItem(sectionId, it.id, 1)} disabled={i === items.length - 1}>
+              <ArrowDown size={14} />
+            </IconButton>
+            <div className="flex-1" />
+            <IconButton label={t("edit.delete")} size="sm" onClick={() => removeItem(sectionId, it.id)}>
+              <Trash2 size={14} />
+            </IconButton>
+          </div>
+          <div className="space-y-1.5">
+            <Input
+              className="h-8"
+              placeholder={t("edit.itemTitlePlaceholder")}
+              value={localizedText(it.title, locale)}
+              onChange={(e) => updateLocalized(sectionId, it.id, "title", locale, e.target.value)}
+            />
+            <Input
+              className="h-8"
+              placeholder={t("edit.itemSubtitlePlaceholder")}
+              value={localizedText(it.subtitle, locale)}
+              onChange={(e) => updateLocalized(sectionId, it.id, "subtitle", locale, e.target.value)}
+            />
+            <div className="flex items-center gap-2">
+              <Input
+                className="h-8"
+                type="month"
+                aria-label={t("edit.startDate")}
+                value={it.startDate}
+                onChange={(e) => updateDate(sectionId, it.id, { startDate: e.target.value })}
+              />
+              <Input
+                className="h-8"
+                type="month"
+                aria-label={t("edit.endDate")}
+                value={it.endDate}
+                disabled={it.current}
+                onChange={(e) => updateDate(sectionId, it.id, { endDate: e.target.value })}
+              />
+            </div>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Switch checked={it.current} onChange={(v) => updateDate(sectionId, it.id, { current: v })} />
+              {t("edit.current")}
+            </label>
+            <Textarea
+              className="min-h-16 text-xs"
+              placeholder={t("edit.summaryPlaceholder")}
+              value={localizedText(it.description, locale)}
+              onChange={(e) => updateDesc(sectionId, it.id, locale, e.target.value)}
+            />
+          </div>
+        </div>
+      ))}
+      {items.length === 0 && (
+        <p className="px-1 text-xs text-muted-foreground">{t("edit.fillHint")}</p>
+      )}
+    </div>
+  );
+}
+
+function GroupsEditor({
+  sectionId,
+  groups,
+  locale,
+}: {
+  sectionId: string;
+  groups: ResumeSection["groups"];
+  locale: Locale;
+}) {
+  const { t } = useI18n();
+  const updateName = useResumeStore((s) => s.updateGroupName);
+  const updateItems = useResumeStore((s) => s.updateGroupItems);
+  const removeGroup = useResumeStore((s) => s.removeGroup);
+  const moveGroup = useResumeStore((s) => s.moveGroup);
+
+  return (
+    <div className="space-y-2">
+      {groups.map((g, i) => (
+        <div key={g.id} className="rounded-lg bg-secondary/50 p-2">
+          <div className="mb-1.5 flex items-center gap-1">
+            <IconButton label={t("edit.up")} size="sm" onClick={() => moveGroup(sectionId, g.id, -1)} disabled={i === 0}>
+              <ArrowUp size={14} />
+            </IconButton>
+            <IconButton label={t("edit.down")} size="sm" onClick={() => moveGroup(sectionId, g.id, 1)} disabled={i === groups.length - 1}>
+              <ArrowDown size={14} />
+            </IconButton>
+            <div className="flex-1" />
+            <IconButton label={t("edit.delete")} size="sm" onClick={() => removeGroup(sectionId, g.id)}>
+              <Trash2 size={14} />
+            </IconButton>
+          </div>
+          <Input
+            className="h-8"
+            placeholder={t("edit.groupNamePlaceholder")}
+            value={localizedText(g.name, locale)}
+            onChange={(e) => updateName(sectionId, g.id, locale, e.target.value)}
+          />
+          <Textarea
+            className="mt-1.5 min-h-14 text-xs"
+            placeholder={t("edit.skillItemPlaceholder")}
+            value={localizedText(g.items, locale)}
+            onChange={(e) => updateItems(sectionId, g.id, locale, e.target.value)}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Field({
+  label,
+  className,
+  children,
+}: {
+  label: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className={className}>
+      <span className="mb-1 block text-xs text-muted-foreground">{label}</span>
+      {children}
+    </label>
+  );
+}
