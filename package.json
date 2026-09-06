@@ -11,7 +11,10 @@
     "lint": "eslint .",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "verify:rules": "bash scripts/verify-rules.sh",
+    "hooks:install": "bash scripts/install-hooks.sh",
+    "prepare": "bash scripts/install-hooks.sh"
   },
   "dependencies": {
     "clsx": "^2.1.1",

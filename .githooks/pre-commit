@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# 提交前强制校验：规则 → 类型检查 → Lint → 单测，任一失败即阻断提交。
+set -e
+
+ROOT=$(git rev-parse --show-toplevel)
+cd "$ROOT"
+
+echo "▶ pre-commit: 规则校验"
+bash scripts/verify-rules.sh
+
+echo "▶ pre-commit: 类型检查"
+npm run typecheck
+
+echo "▶ pre-commit: Lint"
+npm run lint
+
+echo "▶ pre-commit: 单元测试"
+npm run test
+
+echo "✓ pre-commit 全部通过"

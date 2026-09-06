@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# 推送前强制校验：完整生产构建（含类型检查）。
+set -e
+
+ROOT=$(git rev-parse --show-toplevel)
+cd "$ROOT"
+
+echo "▶ pre-push: 生产构建"
+npm run build
+
+echo "✓ pre-push 全部通过"
