@@ -33,6 +33,7 @@
 - MUST 把新增 UI 文案同时加入 `shared/i18n/dictionaries.ts` 的**全部 5 个语言**（zh/en/ja/de/ko）；MUST NOT 在 JSX 里硬编码界面文案。（`rg -n '\p{Han}' src --glob '*.tsx' | rg -v dictionaries` 后逐条确认，**注释之外**的中文即为违规）
 - MUST 用 `useI18n().t()` 取文案；注意 `translate(locale, key, params)` 第一个参数是 locale。
 - MUST 让新的简历正文字段使用 `Localized<T>` 并经 `localizedValue` 读取，以继承回退链。
+- MUST 让承载界面文案的定宽/单行控件可收缩或省略：tab / 菜单项 / 导航 / 工具条标签用 `.i18n-truncate`（单行省略 + `title` 完整文本），不写死固定宽度把长译文（德/日/韩）挤出压住相邻元素；可换行的卡片标题用 `.i18n-clamp-2`。全局已对 `button`/`a`/`[role=tab]`/`[role=menuitem]` 设 `min-width:0` 允许收缩。
 
 **UI / 样式 / 打印**
 - MUST 只用 `lucide-react` 作图标，MUST NOT 用 emoji 充当 UI 图标或装饰。（`rg -n '[\p{Emoji_Presentation}]' src/` 必须为 0）

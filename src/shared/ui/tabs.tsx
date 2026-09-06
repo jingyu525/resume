@@ -25,7 +25,7 @@ export function Tabs<T extends string>({
       role="tablist"
       aria-label={rest["aria-label"]}
       className={cn(
-        "inline-flex rounded-xl border border-border bg-secondary p-1",
+        "flex w-full overflow-hidden rounded-xl border border-border bg-secondary p-1",
         className,
       )}
     >
@@ -34,10 +34,11 @@ export function Tabs<T extends string>({
           key={opt.value}
           type="button"
           role="tab"
+          title={opt.label}
           aria-selected={value === opt.value}
           onClick={() => onChange(opt.value)}
           className={cn(
-            "rounded-lg px-4 py-1.5 text-sm font-medium transition-colors cursor-pointer",
+            "i18n-truncate min-w-0 flex-1 rounded-lg px-3 py-1.5 text-center text-sm font-medium transition-colors cursor-pointer",
             value === opt.value
               ? "bg-background text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground",

@@ -21,12 +21,12 @@ export function EditorToolbar({
   const locale = useResumeStore((s) => s.locale);
 
   return (
-    <header className="flex h-14 items-center gap-2 border-b border-border bg-background/80 px-3 backdrop-blur-xl">
-      <Link to="/" className="flex items-center gap-2 font-semibold">
+    <header className="flex h-14 items-center gap-2 overflow-x-auto border-b border-border bg-background/80 px-3 backdrop-blur-xl no-scrollbar">
+      <Link to="/" className="flex min-w-0 items-center gap-2 font-semibold">
         <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary text-primary-foreground">
           <FileText size={16} />
         </span>
-        <span className="hidden sm:inline">{t("nav.brand")}</span>
+        <span className="i18n-truncate hidden max-w-[8rem] sm:inline">{t("nav.brand")}</span>
       </Link>
 
       <div className="ml-1">
@@ -51,7 +51,7 @@ export function EditorToolbar({
         ))}
       </div>
 
-      <div className="ml-auto flex items-center gap-1">
+      <div className="ml-auto flex shrink-0 items-center gap-1">
         <IconButton label={t("appearance.title")} onClick={onToggleAppearance}>
           <Palette size={18} />
         </IconButton>

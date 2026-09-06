@@ -222,6 +222,39 @@ body {
 }
 
 /* 打印：仅输出 A4 内容，隐藏屏幕专属元素 */
+/* ====== i18n 文本长度安全：不同语言文本长短不一，避免溢出压住相邻元素 ====== */
+/* 交互元素默认可收缩，避免长译文把同行元素挤出或重叠 */
+[role="tab"],
+[role="menuitem"],
+button,
+a {
+  min-width: 0;
+}
+
+/* 单行省略：用于 tab / 菜单项 / 导航等定宽控件，长文本以省略号收口，完整内容放 title */
+.i18n-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 多行截断（最多 2 行），用于卡片标题等可换行位置 */
+.i18n-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 窄屏导航/工具条横向滚动而非重叠或撑破布局 */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 @media print {
   @page {
     size: A4;

@@ -15,7 +15,9 @@ export function LanguageSwitcher({ showLabel = true }: { showLabel?: boolean }) 
       trigger={
         <span className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm hover:bg-secondary">
           <Languages size={16} />
-          {showLabel && <span>{LOCALE_LABELS[locale]}</span>}
+          {showLabel && (
+            <span className="i18n-truncate max-w-[6rem]">{LOCALE_LABELS[locale]}</span>
+          )}
         </span>
       }
       items={LOCALES.map((l: Locale) => ({

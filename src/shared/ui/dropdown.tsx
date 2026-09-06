@@ -50,7 +50,7 @@ export function DropdownMenu({ trigger, items, align = "end", className }: Dropd
         <div
           role="menu"
           className={cn(
-            "absolute z-50 mt-2 min-w-48 rounded-xl border border-border bg-popover p-1.5 shadow-xl",
+            "absolute z-50 mt-2 min-w-48 max-w-72 rounded-xl border border-border bg-popover p-1.5 shadow-xl",
             "animate-in fade-in zoom-in-95",
             align === "end" ? "right-0" : "left-0",
           )}
@@ -65,14 +65,14 @@ export function DropdownMenu({ trigger, items, align = "end", className }: Dropd
                 item.onClick();
               }}
               className={cn(
-                "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors text-left",
+                "flex w-full min-w-0 items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors",
                 item.danger
                   ? "text-destructive hover:bg-destructive/10"
                   : "text-popover-foreground hover:bg-secondary",
               )}
             >
               {item.icon}
-              <span>{item.label}</span>
+              <span className="i18n-truncate" title={item.label}>{item.label}</span>
             </button>
           ))}
         </div>
