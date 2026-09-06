@@ -28,7 +28,7 @@ export function LandingPage() {
   return (
     <div className="min-h-screen">
       <header className="fixed inset-x-0 top-0 z-40 border-b border-border/60 bg-background/70 backdrop-blur-xl">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 overflow-x-auto px-6 no-scrollbar">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-6">
           <Link to="/" className="flex min-w-0 items-center gap-2 font-semibold">
             <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary text-primary-foreground">
               <FileText size={16} />

@@ -21,7 +21,7 @@ export function EditorToolbar({
   const locale = useResumeStore((s) => s.locale);
 
   return (
-    <header className="flex h-14 items-center gap-2 overflow-x-auto border-b border-border bg-background/80 px-3 backdrop-blur-xl no-scrollbar">
+    <header className="relative z-50 flex h-14 items-center gap-2 border-b border-border bg-background/80 px-3 backdrop-blur-xl">
       <Link to="/" className="flex min-w-0 items-center gap-2 font-semibold">
         <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary text-primary-foreground">
           <FileText size={16} />
