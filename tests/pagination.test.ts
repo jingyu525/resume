@@ -65,4 +65,18 @@ describe("distributeBlocks (FR-7 分页)", () => {
     expect(flat).toHaveLength(3);
     expect(new Set(flat.map((b) => b.id)).size).toBe(3);
   });
+
+  it("空块列表返回单页占位 [[]]", () => {
+    expect(distributeBlocks([], new Map(), 250)).toEqual([[]]);
+  });
+
+  it("高度缺失的块按 0 计（?? 兜底，不崩）", () => {
+    const pages = distributeBlocks([item("a", 100)], new Map(), 250);
+    expect(pages[0][0].id).toBe("a");
+  });
+
+  it("末块 keepWithNext 但无后继时 && 短路不越界", () => {
+    const pages = distributeBlocks([head("h", 20, true)], new Map([["h", 20]]), 250);
+    expect(pages[0][0].id).toBe("h");
+  });
 });

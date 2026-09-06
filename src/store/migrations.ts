@@ -159,15 +159,18 @@ function sanitizeLocales(resume: unknown) {
   };
   scrub(r.basics);
   (r.sections ?? []).forEach((sec) => {
+    if (!sec || typeof sec !== "object") return;
     const s = sec as Record<string, unknown>;
     scrub(s.title as Record<string, Record<string, string>>);
     (Array.isArray(s.items) ? s.items : []).forEach((it) => {
+      if (!it || typeof it !== "object") return;
       const i = it as Record<string, unknown>;
       scrub(i.title as Record<string, Record<string, string>>);
       scrub(i.subtitle as Record<string, Record<string, string>>);
       scrub(i.description as Record<string, Record<string, string>>);
     });
     (Array.isArray(s.groups) ? s.groups : []).forEach((g) => {
+      if (!g || typeof g !== "object") return;
       const gr = g as Record<string, unknown>;
       scrub(gr.name as Record<string, Record<string, string>>);
       scrub(gr.items as Record<string, Record<string, string>>);

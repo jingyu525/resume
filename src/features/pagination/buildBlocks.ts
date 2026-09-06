@@ -63,7 +63,6 @@ export function buildBlocks(resume: ResumeData, locale: Locale, layout: Layout):
     if (layout === "sidebar") {
       // 侧栏：基本信息 + 自我评价 + 专业技能；主栏：其余经历类
       if (section.kind === "skills" || section.kind === "summary") {
-        if (section.kind === "summary") sidebar.push(basics);
         pushSection(sidebar, section);
       } else {
         pushSection(main, section);

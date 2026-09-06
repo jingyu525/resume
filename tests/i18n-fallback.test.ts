@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { translate } from "@/shared/i18n";
-import { localizedValue } from "@/shared/lib/localized";
+import { localizedValue, localizedText, isRichEmpty } from "@/shared/lib/localized";
 
 describe("i18n 回退链（FR-6）", () => {
   it("当前语言命中直接返回", () => {
@@ -27,5 +27,31 @@ describe("i18n 回退链（FR-6）", () => {
 
   it("空字段回退为空串", () => {
     expect(localizedValue({}, "zh")).toBeUndefined();
+  });
+
+  it("当前语言字段值为 null 时跳过回退链", () => {
+    expect(localizedValue({ zh: null } as Record<string, string | null>, "zh")).toBeUndefined();
+  });
+
+  it("localizedText 缺值回退空串", () => {
+    expect(localizedText({}, "zh")).toBe("");
+  });
+});
+
+describe("isRichEmpty (富文本空值判定)", () => {
+  it("undefined/空串/纯空白视为空", () => {
+    expect(isRichEmpty(undefined)).toBe(true);
+    expect(isRichEmpty("")).toBe(true);
+    expect(isRichEmpty("   ")).toBe(true);
+  });
+
+  it("仅含标签无可见文本视为空", () => {
+    expect(isRichEmpty("<p></p>")).toBe(true);
+    expect(isRichEmpty("<p><br></p>")).toBe(true);
+  });
+
+  it("含可见文本视为非空", () => {
+    expect(isRichEmpty("<p>你好</p>")).toBe(false);
+    expect(isRichEmpty("a&nbsp;b")).toBe(false);
   });
 });

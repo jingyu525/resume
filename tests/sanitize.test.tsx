@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
-import { sanitizeRichText } from "@/shared/lib/sanitize";
+import {
+  sanitizeRichText,
+  resetRichFormat,
+  textToRichText,
+  richTextToPlain,
+} from "@/shared/lib/sanitize";
 import { EditableField } from "@/features/inline-richtext/EditableField";
 
 describe("sanitizeRichText (NFR-3 XSS 防护)", () => {
@@ -36,5 +41,27 @@ describe("sanitizeRichText (NFR-3 XSS 防护)", () => {
     expect(el.innerHTML).not.toContain("<img");
     expect(el.innerHTML).not.toContain("<script");
     expect(el.innerHTML).toContain("ok");
+  });
+});
+
+describe("富文本辅助纯函数", () => {
+  it("resetRichFormat 仅保留段落结构，剥离 class/style", () => {
+    const out = resetRichFormat('<p class="rs-em"><strong>b</strong></p><ul><li>x</li></ul>');
+    expect(out).not.toContain("class");
+    expect(out).not.toContain("<strong>");
+    expect(out).toContain("<p>");
+    expect(out).toContain("<ul>");
+  });
+
+  it("textToRichText 空串返回空，双换行分段", () => {
+    expect(textToRichText("   ")).toBe("");
+    expect(textToRichText("A\n\nB")).toBe("<p>A</p><p>B</p>");
+    expect(textToRichText("a\nb")).toBe("<p>a<br>b</p>");
+  });
+
+  it("richTextToPlain 还原为纯文本并保留换行", () => {
+    expect(richTextToPlain("<p>第一行<br>第二行</p><ul><li>项</li></ul>")).toBe(
+      "第一行\n第二行\n项",
+    );
   });
 });
