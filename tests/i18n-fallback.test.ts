@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { translate } from "@/shared/i18n";
-import { localizedValue, localizedText, isRichEmpty } from "@/shared/lib/localized";
+import {
+  localizedValue,
+  localizedText,
+  localizedSource,
+  isRichEmpty,
+} from "@/shared/lib/localized";
 
 describe("i18n 回退链（FR-6）", () => {
   it("当前语言命中直接返回", () => {
@@ -35,6 +40,48 @@ describe("i18n 回退链（FR-6）", () => {
 
   it("localizedText 缺值回退空串", () => {
     expect(localizedText({}, "zh")).toBe("");
+  });
+});
+
+describe("localizedSource（回退可见性：编辑区据此标注来源语言）", () => {
+  it("当前语言命中：非回退，source 为当前语言", () => {
+    expect(localizedSource({ zh: "你好", de: "Hallo" }, "de")).toEqual({
+      value: "Hallo",
+      source: "de",
+      fallback: false,
+    });
+  });
+
+  it("当前语言缺失回退到默认语言：标为回退并给出来源语言", () => {
+    // 德语缺失 -> 显示中文，编辑区需提示「正在显示 中文 回退」
+    expect(localizedSource({ zh: "自我评价", en: "Summary" }, "de")).toEqual({
+      value: "自我评价",
+      source: "zh",
+      fallback: true,
+    });
+  });
+
+  it("当前与默认都缺失：回退到任一已有语言", () => {
+    expect(localizedSource({ en: "Summary" }, "ja")).toEqual({
+      value: "Summary",
+      source: "en",
+      fallback: true,
+    });
+  });
+
+  it("字段为空时既不回退也无来源", () => {
+    expect(localizedSource({}, "de")).toEqual({
+      value: undefined,
+      source: undefined,
+      fallback: false,
+    });
+  });
+
+  it("localizedValue 与 localizedSource 取值一致（单一回退实现）", () => {
+    const field = { zh: "你好", ko: "안녕" };
+    for (const l of ["zh", "en", "ja", "de", "ko"] as const) {
+      expect(localizedValue(field, l)).toBe(localizedSource(field, l).value);
+    }
   });
 });
 

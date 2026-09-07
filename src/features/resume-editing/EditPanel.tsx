@@ -1,8 +1,8 @@
 import { useResumeStore } from "@/store/useResumeStore";
 import { useI18n } from "@/shared/i18n";
-import { localizedText } from "@/shared/lib/localized";
-import type { Locale } from "@/entities/locale";
-import type { ResumeSection, SectionKind } from "@/entities/resume/model";
+import { localizedSource } from "@/shared/lib/localized";
+import { LOCALE_LABELS, type Locale } from "@/entities/locale";
+import type { Localized, ResumeSection, SectionKind } from "@/entities/resume/model";
 import { Input, Textarea } from "@/shared/ui/input";
 import { richTextToPlain, textToRichText } from "@/shared/lib/sanitize";
 import { Button, IconButton } from "@/shared/ui/button";
@@ -16,8 +16,55 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
+import { cn } from "@/shared/lib/cn";
 
 const ADDABLE: SectionKind[] = ["summary", "experience", "project", "education", "skills"];
+
+const identity = (v: string) => v;
+
+/**
+ * 多语言字段输入：当前语言缺失时，以虚线边框 + 浅色标出「正在显示回退」，
+ * 避免编辑区静默显示其它语言而被误认为 bug（输入即按当前语言保存）。
+ */
+function LocalizedField({
+  field,
+  locale,
+  onChange,
+  className,
+  placeholder,
+  ariaLabel,
+  multiline = false,
+  toView = identity,
+  fromView = identity,
+}: {
+  field: Localized<string>;
+  locale: Locale;
+  onChange: (raw: string) => void;
+  className?: string;
+  placeholder?: string;
+  ariaLabel?: string;
+  multiline?: boolean;
+  toView?: (raw: string) => string;
+  fromView?: (view: string) => string;
+}) {
+  const { t } = useI18n();
+  const { value, source, fallback } = localizedSource(field, locale);
+  const hint =
+    fallback && source ? t("edit.fallbackHint", { lang: LOCALE_LABELS[source] }) : undefined;
+  const shared = {
+    className: cn(className, fallback && "border-dashed text-muted-foreground"),
+    placeholder,
+    "aria-label": ariaLabel,
+    title: hint,
+    value: toView(value ?? ""),
+  };
+
+  return multiline ? (
+    <Textarea {...shared} onChange={(e) => onChange(fromView(e.target.value))} />
+  ) : (
+    <Input {...shared} onChange={(e) => onChange(fromView(e.target.value))} />
+  );
+}
 
 /** 左编辑面板：基本信息 + 动态章节列表（增删改排序、隐藏、改标题、增删条目），FR-2 */
 export function EditPanel() {
@@ -37,15 +84,17 @@ export function EditPanel() {
         <h3 className="mb-3 text-sm font-semibold">{t("edit.basic")}</h3>
         <div className="grid grid-cols-2 gap-2">
           <Field label={t("edit.name")}>
-            <Input
-              value={localizedText(basics.name, locale)}
-              onChange={(e) => updateLocalized("name", locale, e.target.value)}
+            <LocalizedField
+              field={basics.name}
+              locale={locale}
+              onChange={(v) => updateLocalized("name", locale, v)}
             />
           </Field>
           <Field label={t("edit.jobTitle")}>
-            <Input
-              value={localizedText(basics.title, locale)}
-              onChange={(e) => updateLocalized("title", locale, e.target.value)}
+            <LocalizedField
+              field={basics.title}
+              locale={locale}
+              onChange={(v) => updateLocalized("title", locale, v)}
             />
           </Field>
           <Field label={t("edit.phone")}>
@@ -55,9 +104,10 @@ export function EditPanel() {
             <Input value={basics.email} onChange={(e) => updatePlain("email", e.target.value)} />
           </Field>
           <Field label={t("edit.city")}>
-            <Input
-              value={localizedText(basics.city, locale)}
-              onChange={(e) => updateLocalized("city", locale, e.target.value)}
+            <LocalizedField
+              field={basics.city}
+              locale={locale}
+              onChange={(v) => updateLocalized("city", locale, v)}
             />
           </Field>
           <Field label={t("edit.wechat")}>
@@ -125,11 +175,12 @@ function SectionCard({
         <IconButton label={t("edit.down")} size="sm" onClick={() => moveSection(section.id, 1)} disabled={index === total - 1}>
           <ArrowDown size={15} />
         </IconButton>
-        <Input
+        <LocalizedField
           className="h-8 flex-1 text-sm font-medium"
-          value={localizedText(section.title, locale)}
-          onChange={(e) => renameSection(section.id, locale, e.target.value)}
-          aria-label={t("edit.rename")}
+          field={section.title}
+          locale={locale}
+          onChange={(v) => renameSection(section.id, locale, v)}
+          ariaLabel={t("edit.rename")}
         />
         <IconButton
           label={section.visible ? t("edit.hide") : t("edit.show")}
@@ -194,17 +245,19 @@ function ItemsEditor({
             </IconButton>
           </div>
           <div className="space-y-1.5">
-            <Input
+            <LocalizedField
               className="h-8"
               placeholder={t("edit.itemTitlePlaceholder")}
-              value={localizedText(it.title, locale)}
-              onChange={(e) => updateLocalized(sectionId, it.id, "title", locale, e.target.value)}
+              field={it.title}
+              locale={locale}
+              onChange={(v) => updateLocalized(sectionId, it.id, "title", locale, v)}
             />
-            <Input
+            <LocalizedField
               className="h-8"
               placeholder={t("edit.itemSubtitlePlaceholder")}
-              value={localizedText(it.subtitle, locale)}
-              onChange={(e) => updateLocalized(sectionId, it.id, "subtitle", locale, e.target.value)}
+              field={it.subtitle}
+              locale={locale}
+              onChange={(v) => updateLocalized(sectionId, it.id, "subtitle", locale, v)}
             />
             <div className="flex items-center gap-2">
               <Input
@@ -227,11 +280,15 @@ function ItemsEditor({
               <Switch checked={it.current} onChange={(v) => updateDate(sectionId, it.id, { current: v })} />
               {t("edit.current")}
             </label>
-            <Textarea
+            <LocalizedField
               className="min-h-16 text-xs"
               placeholder={t("edit.summaryPlaceholder")}
-              value={richTextToPlain(localizedText(it.description, locale))}
-              onChange={(e) => updateDesc(sectionId, it.id, locale, textToRichText(e.target.value))}
+              field={it.description}
+              locale={locale}
+              multiline
+              toView={richTextToPlain}
+              fromView={textToRichText}
+              onChange={(v) => updateDesc(sectionId, it.id, locale, v)}
             />
           </div>
         </div>
@@ -274,17 +331,20 @@ function GroupsEditor({
               <Trash2 size={14} />
             </IconButton>
           </div>
-          <Input
+          <LocalizedField
             className="h-8"
             placeholder={t("edit.groupNamePlaceholder")}
-            value={localizedText(g.name, locale)}
-            onChange={(e) => updateName(sectionId, g.id, locale, e.target.value)}
+            field={g.name}
+            locale={locale}
+            onChange={(v) => updateName(sectionId, g.id, locale, v)}
           />
-          <Textarea
+          <LocalizedField
             className="mt-1.5 min-h-14 text-xs"
             placeholder={t("edit.skillItemPlaceholder")}
-            value={localizedText(g.items, locale)}
-            onChange={(e) => updateItems(sectionId, g.id, locale, e.target.value)}
+            field={g.items}
+            locale={locale}
+            multiline
+            onChange={(v) => updateItems(sectionId, g.id, locale, v)}
           />
         </div>
       ))}
