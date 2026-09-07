@@ -33,6 +33,7 @@
 - MUST 把新增 UI 文案同时加入 `shared/i18n/dictionaries.ts` 的**全部 5 个语言**（zh/en/ja/de/ko）；MUST NOT 在 JSX 里硬编码界面文案。（`rg -n '\p{Han}' src --glob '*.tsx' | rg -v dictionaries` 后逐条确认，**注释之外**的中文即为违规）
 - MUST 用 `useI18n().t()` 取文案；注意 `translate(locale, key, params)` 第一个参数是 locale。
 - MUST 让新的简历正文字段使用 `Localized<T>` 并经 `localizedValue` 读取，以继承回退链。
+- MUST 让种子模板（`entities/resume/defaults.ts` 的 `createSampleResume` / `createEmptyResume`）的**每个** `Localized` 字段填齐五语；只填 zh/en 会让切到 ja/de/ko 时经回退链显示中文，等于「每语言没有自己的模版」。由 `tests/sample-resume.test.ts` 锁住五语齐全。
 - MUST 让承载界面文案的定宽/单行控件可收缩或省略：tab / 菜单项 / 导航 / 工具条标签用 `.i18n-truncate`（单行省略 + `title` 完整文本），不写死固定宽度把长译文（德/日/韩）挤出压住相邻元素；可换行的卡片标题用 `.i18n-clamp-2`。全局已对 `button`/`a`/`[role=tab]`/`[role=menuitem]` 设 `min-width:0` 允许收缩。
 - MUST 让经变量传入 `t()` 的 i18n key（典型如 `shared/config/presets.ts` 的 `labelKey: "appearance.layout.single"`）真实存在于字典，且命名空间前缀与字典一致。`t("layout.single")` 这类**前缀写错**的 key 普通 `t("...")` 静态扫描扫不到，专由 `node scripts/verify-i18n-keys.mjs` 覆盖（`t()` 字面量 + `labelKey:` 字面量 + 五语完整性三轨）。
 - MUST NOT 依赖 `t()` 的静默回退兜底：key 缺失时 `t()` 返回 **key 原文**（如界面出现 `layout.single`、`editor.edit`），看起来像正常文案却实为 bug。提交前由 `verify-i18n-keys.mjs` 阻断。
