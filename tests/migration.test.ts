@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { migrate, validateBackup } from "@/store/migrations";
+import { migrate, validateBackup, STORAGE_VERSION } from "@/store/migrations";
 
 describe("持久化迁移与校验（FR-9）", () => {
   it("损坏数据为 null 时回退到带章节的空简历", () => {
     const r = migrate(null);
     expect(r.resume.sections.length).toBeGreaterThan(0);
-    expect(r.version).toBe(1);
+    expect(r.version).toBe(STORAGE_VERSION);
   });
 
   it("缺少 sections 的旧数据被补全", () => {
@@ -29,10 +29,13 @@ describe("持久化迁移与校验（FR-9）", () => {
     expect(validateBackup("string")).toBe(false);
   });
 
-  it("validateBackup 接受合法结构", () => {
+  it("validateBackup 接受合法结构（v1 与 v2 都接受）", () => {
     expect(validateBackup({ version: 1, resume: { basics: {}, sections: [] }, appearance: {} })).toBe(
       true,
     );
+    expect(
+      validateBackup({ version: 2, resume: { basics: {}, sections: [] }, appearance: {} }),
+    ).toBe(true);
   });
 
   it("畸形输入（缺 basics / 字段为非对象 / 缺 items·groups 数组 / 非 1 版本）迁移不崩且兜底", () => {
@@ -53,8 +56,31 @@ describe("持久化迁移与校验（FR-9）", () => {
       },
       appearance: {},
     });
-    expect(r.version).toBe(1);
+    expect(r.version).toBe(STORAGE_VERSION);
     expect(r.resume.sections.length).toBe(1);
+  });
+
+  it("未知 kind 的章节（未安装插件）不被丢弃，数据与标题完整保留", () => {
+    const r = migrate({
+      version: STORAGE_VERSION,
+      resume: {
+        basics: { name: { zh: "X" } },
+        sections: [
+          {
+            id: "s",
+            kind: "certifications",
+            title: { zh: "证书" },
+            visible: true,
+            order: 0,
+            items: [{ title: { zh: "PMP" } }],
+          },
+        ],
+      },
+      appearance: {},
+    });
+    expect(r.resume.sections).toHaveLength(1);
+    expect(r.resume.sections[0].kind).toBe("certifications");
+    expect(r.resume.sections[0].items).toHaveLength(1);
   });
 
   it("稀疏字段（条目/分组缺 id·时间·描述，groups 含 null）被补全且不崩", () => {

@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "verify:rules": "bash scripts/verify-rules.sh",
+    "verify:plugins": "node scripts/run-rules.mjs --only=plugin",
     "hooks:install": "bash scripts/install-hooks.sh",
     "prepare": "bash scripts/install-hooks.sh"
   },

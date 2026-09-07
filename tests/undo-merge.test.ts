@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { useResumeStore } from "@/store/useResumeStore";
-import { createEmptyResume } from "@/entities/resume/defaults";
+import { createEmptyResume } from "@/plugins/resume-template";
 import { DEFAULT_APPEARANCE } from "@/entities/appearance/model";
 
 describe("撤销/重做合并步（FR-10）", () => {

@@ -9,8 +9,15 @@
 - MUST NOT 让 `features/` 之间横向互相 import；跨模块复用上提到 `shared/`，或经 `store/` 解耦。
 - MUST 把新的可复用 UI 原语放进 `shared/ui/`，业务能力放进对应 `features/<name>/`。
 
+**插件层（`src/plugins/`，规则 A 组强制）**
+- MUST 把插件放在 `src/plugins/<category>/` 下，category 只能是 `core | section-types | basics-fields | locale-packs | exporters | storage | themes`；MUST 让文件内 `kind` 与目录一致（规则 A3）。
+- MUST NOT 让 `shared/` 或 `entities/` import `@/plugins`；MUST NOT 让 `plugins/core/` import `store`/`features`/`widgets`/`pages`（内核只依赖 `shared`/`entities`）；MUST NOT 让插件 import `pages`/`widgets`（规则 A1/A2/A4）。
+- MUST 一个文件声明一个插件（规则按文件级解析契约）；MUST 让 `id` 全局唯一且 kebab-case、`labelKey` 五语齐全、自带 `dict` 的键以 `plugin.<id>.` 开头（规则 C1/C2/C3）。
+- MUST 让远程存储插件 `defaultEnabled: false` 并声明 `capabilities`（规则 C6）；MUST 只经 `plugins/core/authorizedFetch` 发起网络请求（规则 S1）。
+- MUST 让插件启用状态走 `plugins/core/enabled`（独立键、视图态）；MUST NOT 让它进入 `resume`/`appearance` 或 zundo 的 `partialize`（规则 S3/H1）。
+
 **安全（NFR-3）**
-- MUST 只通过 `sanitizeRichText`（`shared/lib/sanitize.ts`）与 `sanitizePlain`（定义在 `EditableField.tsx` 内）处理富文本；MUST NOT 在其他任何文件给 `innerHTML` 赋值。（`rg -ln 'innerHTML' src/` 必须只输出 `src/features/inline-richtext/EditableField.tsx`）
+- MUST 只通过 `sanitizeRichText`（`shared/lib/sanitize.ts`）与 `sanitizePlain`（定义在 `shared/ui/editable-field.tsx` 内）处理富文本；MUST NOT 在其他任何文件给 `innerHTML` 赋值。（`rg -ln 'innerHTML' src/` 必须只输出 `src/shared/ui/editable-field.tsx`）
 - MUST NOT 删除 `EditableField` 渲染侧的 `toSafeHtml()` 清洗——编辑面板 Textarea 会向 store 写入原始 HTML，这是最后一道安全网。
 - MUST NOT 用内联 `style` 表达强调色，只使用 `rs-em` 类配合 `var(--rs-accent)`。
 - MUST 让新增的可编辑文本字段复用 `EditableField`，不要自建 `contentEditable`。
@@ -59,7 +66,24 @@
 
 - `.githooks/pre-commit` — 依次执行 `verify:rules` → `typecheck` → `lint` → `test`，任一失败即**阻断提交**。
 - `.githooks/pre-push` — 执行 `build`（含 `tsc -b` + `vite build`），失败即阻断推送。
-- `scripts/verify-rules.sh` — 规则校验本体（分层依赖 / innerHTML 收口 / 禁止网络调用 / 禁止 emoji / i18n 硬编码），可单独运行：`npm run verify:rules`。
+- `scripts/verify-rules.sh` — 规则校验**调度器**（入口不变）。依次调用 `scripts/run-rules.mjs`（A/S/G/C/H/I/E 各组规则）与 `scripts/verify-i18n-keys.mjs`（i18n key）。可单独运行：`npm run verify:rules`。
+- `scripts/rules/*.mjs` — 规则本体。每条规则是**纯函数** `check(files, ctx) -> Violation[]`，不读盘、不退出，因此可被 Vitest 直接 import 做自检。新增规则 MUST 同时补 `tests/verify-rules.test.mjs` 里的"违规命中 + 合规不误报"用例，否则规则写错会静默失效。
+- **阶段升级（since 机制）**：插件化是 M0→M5 分阶段重构，像"禁止硬编码 kind 分支（G5）"这类规则在对应里程碑完成前必然违规。每条规则标注 `since`，晚于当前阶段的规则自动降级为**警告**。完成一个里程碑后把 `scripts/rules/phase.mjs` 的 `CURRENT_PHASE` 前移一位即升级为阻断（临时验证：`STRICT_PHASE=M2 npm run verify:rules`）。
+- `npm run verify:plugins` — 只跑插件相关规则（A2-A4/C/S3-S4/H/I3），开发插件时快速反馈。
+
+规则编号即守护标识，改代码报错时按编号查表：
+
+| 组 | 规则 |
+| --- | --- |
+| 架构 A | A1 shared/entities 禁反向依赖（含 plugins）｜A2 plugins/core 纯净｜A3 插件目录与 kind 一致｜A4 插件禁依赖 pages/widgets |
+| 安全 S | S1 仅 `core/authorizedFetch` 允许网络｜S2 innerHTML 收口｜S3 localStorage 隔离（M1 前含 `store/persistence.ts`，由 S3b 在 M1 起接管）｜S4 插件富文本复用 EditableField |
+| 契约 C | C1 id 唯一 kebab-case｜C2 labelKey 五语齐全｜C3 插件 dict 前缀与语言齐备｜C4 章节插件方法齐备 + defaultTitle 五语｜C5 字段 schema 合法｜C6 存储 capabilities 与默认禁用｜C7 默认导出唯一｜C8 语言包 code/label/fallback｜C9 主题 cssVars 须 `--rs-` 前缀（作用域隔离） |
+| 状态 H | H1 partialize 不得含插件状态｜H2 插件不得直接操作 temporal |
+| 分页 G | G1 distribute 纯函数｜G2 flow-root 存在｜G3 JS/CSS 边距同步｜G4 分页基线单测存在｜G5 禁硬编码 kind 分支（M2 起阻断） |
+| i18n I | I1 界面文案禁硬编码中文（仅查 JSX 文本节点与属性，`I18N_BLOCKING=1` 转阻断）｜I3 插件界面文案须走 t() |
+| 质量 E | E1 禁 emoji（放行 ✓ ⚠ 等装饰符号）｜E2 图标只许 lucide-react｜E3 禁 @ts-ignore |
+
+规则只扫描 `src/`（`tests/` 除外，G4 需要它）：测试夹具里的 `fetch(`/`localStorage`/`@ts-ignore` 字符串属数据而非真实调用，纳入扫描会假阳性。
 
 钩子脚本版本化在 `.githooks/`，安装方式为复制到 `.git/hooks/`（**不修改任何 git config**）：
 
@@ -82,7 +106,7 @@ npm install               # 通过 prepare 脚本自动安装
 
 - `npm run typecheck` — 仅 `tsc -b --noEmit`。注意开启了 `noUnusedLocals` / `noUnusedParameters`：未使用的导入与参数会让构建失败，临时变量请用 `_` 前缀。
 
-- `npm run test` — `vitest run`，jsdom 环境，共 22 个用例。跑单个文件：`npx vitest run tests/pagination.test.ts`；跑单个用例：`npx vitest run -t "标题不孤行"`。测试文件若含 JSX 必须用 `.tsx` 后缀（否则 esbuild 转换失败）。
+- `npm run test` — `vitest run`，jsdom 环境，共 119 个用例（其中 33 条是 `tests/verify-rules.test.mjs` 的规则自检）。跑单个文件：`npx vitest run tests/pagination.test.ts`；跑单个用例：`npx vitest run -t "标题不孤行"`。测试文件若含 JSX 必须用 `.tsx` 后缀（否则 esbuild 转换失败）。规则自检用 `.mjs`（见"强制校验钩子"）。
 
 - `npm run test:watch` — Vitest 监听模式，改纯函数（`distribute`、`sanitize`、`migrations`）时最省事。
 
@@ -158,6 +182,26 @@ Résumé Studio 是**纯前端、本地优先**的简历排版工作室：无后
 Tailwind **v4**，CSS-first：`@theme` 设计令牌与深浅色变量都定义在 `globals.css`，**没有 tailwind.config.js**。深色由 `ThemeProvider` 依据 `prefers-color-scheme` 在 `<html>` 上切换 `.dark` 类。图标用 `lucide-react`，不用 emoji。
 
 路径别名 `@/*` → `src/*`，在 `vite.config.ts` 与 `tsconfig.app.json` 中各自配置，新增配置需同步两处。
+
+### 插件开发指南
+
+全站能力（语言、联系方式字段、章节类型、主题、导出器、存储后端）都通过 `src/plugins/core/types.ts` 的同一套契约扩展，构建期内建在 `bootstrap.ts` 的 `BUILTIN_PLUGINS` 同步注册。**第三方插件要接入也走同一入口**（或发 npm 包后由使用方在此注册）——没有运行时远程加载，因此零供应链风险。完整契约、目录布局、各 kind 字段与自带文案规则见 `src/plugins/README.md`；复制即用模板见 `examples/section-type-template.ts`。
+
+新增插件的标准动作：
+
+1. 在对应 category 目录新建**一个文件一个插件**（规则按文件解析），`kind` 与目录一致（A3）。
+2. 实现 `PluginBase` + 该 kind 契约字段：`id`（kebab-case、唯一，C1）、`labelKey`（进五语字典，C2）、`dict?`（键须 `plugin.<id>.` 前缀且五语齐全，C3）。
+3. 在 `bootstrap.ts` 的 `BUILTIN_PLUGINS` 加入。
+4. 跑 `npm run verify:rules` 确认零阻断（C4–C9 按阶段生效）。
+
+各 kind 落点速查：
+
+- **section-type**：自带 `toBlocks`/`renderBlock`/`renderEditor`（分页与编辑依赖它），`defaultTitle` 五语、`fields` 字段 schema、`placement`（sidebar/main 决定侧栏版式分流）。未知 kind 的章节不渲染但**数据保留**（FR-9）。
+- **locale-pack**：`code`（BCP-47）/`label`/`fallback?`；`dict` 翻译**核心 UI 键**（如 `edit.*`），只提供自己那一种语言，未译键经 `fallback` 回退（I2）。
+- **basics-field**：映射到 `BasicInfo` 的 `fieldKey`，`order` 决定展示顺序，`localized` 控制是否随界面语言切换。
+- **exporter**：`run(ctx)` 执行导出；最多一个 `default: true`（C7），默认即工具栏主「打印」按钮。
+- **storage**：`capabilities`，`remote` 必须 `defaultEnabled: false`（C6）；远程只经 `core/authorizedFetch` 发请求（S1，本项目本地优先，无真实网络）。
+- **theme**：只贡献 `cssVars`（键必须 `--rs-` 前缀，禁止全局选择器，C9）与可选 `fonts`，由 `PaginatedResume`/`LandingPage` 合并进简历根节点；切换即生效、不污染整页。
 
 ### 与计划的技术偏差
 

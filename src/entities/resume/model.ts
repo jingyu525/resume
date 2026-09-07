@@ -6,12 +6,22 @@ export type Localized<T> = Partial<Record<Locale, T>>;
 /** 富文本以清洗后的安全 HTML 字符串存储（仅允许 bold / 强调色 / 段落等语义标签）。 */
 export type RichText = string;
 
-export type SectionKind =
-  | "summary"
-  | "experience"
-  | "project"
-  | "education"
-  | "skills";
+export type BuiltinSectionKind = "summary" | "experience" | "project" | "education" | "skills";
+
+/**
+ * 章节 kind：内置五类保留字面量补全，同时开放给章节类型插件扩展（M2）。
+ * 插件章节与内置章节共存，migrate 不得再因 kind 未知而丢弃数据（FR-9）。
+ */
+export type SectionKind = BuiltinSectionKind | (string & {});
+
+/** 内置章节 kind 清单：注册表未就绪时（如单测未 bootstrap）的兜底，绝不为空。 */
+export const BUILTIN_SECTION_KINDS: BuiltinSectionKind[] = [
+  "summary",
+  "experience",
+  "project",
+  "education",
+  "skills",
+];
 
 export interface ResumeItem {
   id: string;
@@ -27,6 +37,8 @@ export interface ResumeItem {
   current: boolean;
   /** 描述（富文本） */
   description: Localized<RichText>;
+  /** 条目级插件扩展字段（v2 起，未安装插件时数据仍保留） */
+  fields?: Record<string, unknown>;
 }
 
 export interface SkillGroup {
@@ -35,6 +47,8 @@ export interface SkillGroup {
   name: Localized<string>;
   /** 条目列表（换行分隔） */
   items: Localized<string>;
+  /** 分组级插件扩展字段（v2 起） */
+  fields?: Record<string, unknown>;
 }
 
 export interface ResumeSection {
@@ -48,6 +62,8 @@ export interface ResumeSection {
   items: ResumeItem[];
   /** 仅 skills 章节使用 */
   groups: SkillGroup[];
+  /** 章节级插件扩展字段（v2 起，未安装插件时数据仍保留） */
+  fields?: Record<string, unknown>;
 }
 
 export interface BasicInfo {
@@ -66,10 +82,4 @@ export interface ResumeData {
   sections: ResumeSection[];
 }
 
-export const SECTION_KIND_LABEL: Record<SectionKind, string> = {
-  summary: "summary",
-  experience: "experience",
-  project: "project",
-  education: "education",
-  skills: "skills",
-};
+// SECTION_KIND_LABEL 已删除：无引用，且开放联合后 Record<SectionKind, string> 不再成立。

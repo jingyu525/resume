@@ -19,7 +19,9 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./tests/setup.ts"],
-    include: ["tests/**/*.test.{ts,tsx}"],
+    // 含 .mjs：规则自检测试需要直接 import scripts/rules/*.mjs，
+    // 写成 .ts 会让 tsc（strict）要求这些工具脚本提供 .d.mts 类型声明，得不偿失。
+    include: ["tests/**/*.test.{ts,tsx,mjs}"],
     coverage: {
       provider: "v8",
       include: [

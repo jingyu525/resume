@@ -1,14 +1,14 @@
 import { Link } from "react-router-dom";
 import { useResumeStore } from "@/store/useResumeStore";
 import { useI18n } from "@/shared/i18n";
-import { Button, IconButton } from "@/shared/ui/button";
+import { IconButton } from "@/shared/ui/button";
 import { UndoRedoButtons } from "@/features/undo-redo/UndoRedo";
 import { LanguageSwitcher } from "@/features/language-switch/LanguageSwitcher";
 import { MoreMenu } from "@/widgets/editor-toolbar/MoreMenu";
-import { triggerPrint } from "@/features/print-export/usePrint";
+import { ExportMenu } from "./ExportMenu";
 import { ACCENT_COLORS } from "@/shared/config/presets";
 import { cn } from "@/shared/lib/cn";
-import { FileText, Palette, Printer } from "lucide-react";
+import { FileText, Palette } from "lucide-react";
 
 export function EditorToolbar({
   onToggleAppearance,
@@ -57,9 +57,7 @@ export function EditorToolbar({
         </IconButton>
         <LanguageSwitcher showLabel={false} />
         <MoreMenu />
-        <Button size="sm" className="ml-1 no-print" onClick={triggerPrint}>
-          <Printer size={16} /> <span className="hidden sm:inline">{t("editor.print")}</span>
-        </Button>
+        <ExportMenu />
         <span className="sr-only">{locale}</span>
       </div>
     </header>

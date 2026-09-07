@@ -11,14 +11,21 @@ function interpolate(template: string, params?: TParams): string {
   );
 }
 
-/** 纯函数翻译：当前语言缺失 → 默认语言 → 返回 key（绝不崩溃） */
+/**
+ * 纯函数翻译：当前语言缺失 → 默认语言 → 返回 key（绝不崩溃）。
+ *
+ * `dicts` 可选：插件化后字典 = 核心字典 + 插件自带文案，由 app 层（I18nProvider）
+ * 注入合并结果。shared 因此不必 import plugins（FSD：shared 不得反向依赖上层）。
+ */
 export function translate(
   locale: Locale,
   key: string,
   params?: TParams,
+  dicts?: Record<string, Dict>,
 ): string {
-  const dict: Dict = dictionaries[locale] ?? {};
-  const text = dict[key] ?? dictionaries[DEFAULT_LOCALE][key] ?? key;
+  const dict: Dict = dicts?.[locale] ?? dictionaries[locale] ?? {};
+  const fallback: Dict = dicts?.[DEFAULT_LOCALE] ?? dictionaries[DEFAULT_LOCALE] ?? {};
+  const text = dict[key] ?? fallback[key] ?? key;
   return interpolate(text, params);
 }
 

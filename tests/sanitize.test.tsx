@@ -6,7 +6,7 @@ import {
   textToRichText,
   richTextToPlain,
 } from "@/shared/lib/sanitize";
-import { EditableField } from "@/features/inline-richtext/EditableField";
+import { EditableField } from "@/shared/ui/editable-field";
 
 describe("sanitizeRichText (NFR-3 XSS 防护)", () => {
   it("移除 script 与 on* 事件属性", () => {

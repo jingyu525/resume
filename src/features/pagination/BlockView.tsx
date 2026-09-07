@@ -1,9 +1,17 @@
 import type { Locale } from "@/entities/locale";
 import { useResumeStore } from "@/store/useResumeStore";
 import { localizedText } from "@/shared/lib/localized";
+import { readBasicField } from "@/shared/lib/basics";
 import { useI18n } from "@/shared/i18n";
-import { itemDateLabel, type Block } from "./buildBlocks";
-import { EditableField } from "@/features/inline-richtext/EditableField";
+import { cn } from "@/shared/lib/cn";
+import { listBasicsFields, getSectionType } from "@/plugins/core/registry";
+import type { Block } from "./buildBlocks";
+import { EditableField } from "@/shared/ui/editable-field";
+
+/** 基本信息里多语言字段的键（与 store 的 LocalizedField 对齐） */
+type BasicLocalizedField = "name" | "title" | "city";
+/** 基本信息里纯文本字段的键（与 store 的 PlainField 对齐） */
+type BasicPlainField = "phone" | "email" | "wechat" | "website";
 
 export function BlockView({ block, locale }: { block: Block; locale: Locale }) {
   switch (block.type) {
@@ -12,9 +20,11 @@ export function BlockView({ block, locale }: { block: Block; locale: Locale }) {
     case "section-head":
       return <SectionHeadBlock block={block} locale={locale} />;
     case "item":
-      return <ItemBlock block={block} locale={locale} />;
-    case "skill-group":
-      return <SkillGroupBlock block={block} locale={locale} />;
+    case "skill-group": {
+      // 渲染器由产出该块的章节类型插件提供；缺插件时返回 null（数据由 migrate 保留，不渲染以免错版）
+      const plugin = block.sectionKind ? getSectionType(block.sectionKind) : undefined;
+      return plugin ? plugin.renderBlock(block, locale) : null;
+    }
     default:
       return null;
   }
@@ -26,13 +36,8 @@ function BasicsBlock({ locale }: { locale: Locale }) {
   const updateLocalized = useResumeStore((s) => s.updateBasicLocalized);
   const updatePlain = useResumeStore((s) => s.updateBasicPlain);
 
-  const contacts = [
-    basics.phone,
-    basics.email,
-    localizedText(basics.city, locale),
-    basics.wechat,
-    basics.website,
-  ].filter(Boolean) as string[];
+  // 联系方式字段由插件提供：地域差异（中国微信 / 欧美 LinkedIn）靠替换插件解决，而非改数据模型
+  const fields = listBasicsFields();
 
   return (
     <div className="rs-basics">
@@ -52,50 +57,32 @@ function BasicsBlock({ locale }: { locale: Locale }) {
         className="rs-jobtitle"
         onChange={(v) => updateLocalized("title", locale, v)}
       />
-      {contacts.length > 0 && (
-        <div className="rs-contact">
-          {contacts.map((c, i) => (
-            <span key={i}>{c}</span>
-          ))}
-        </div>
-      )}
+      {/*
+        联系方式只有这一行：它是可编辑的（预览区即编辑器）。
+        空字段在屏幕上以灰色占位提示填写，打印时由 .rs-empty 隐藏，避免占位文字上纸。
+      */}
       <div className="rs-contact rs-contact-edit">
-        <EditableField
-          ariaLabel={t("edit.phone")}
-          html={basics.phone}
-          placeholder={t("edit.phone")}
-          multiline={false}
-          className="rs-inline-plain"
-          onChange={(v) => updatePlain("phone", v)}
-        />
-        <EditableField
-          ariaLabel={t("edit.email")}
-          html={basics.email}
-          placeholder={t("edit.email")}
-          multiline={false}
-          onChange={(v) => updatePlain("email", v)}
-        />
-        <EditableField
-          ariaLabel={t("edit.city")}
-          html={localizedText(basics.city, locale)}
-          placeholder={t("edit.city")}
-          multiline={false}
-          onChange={(v) => updateLocalized("city", locale, v)}
-        />
-        <EditableField
-          ariaLabel={t("edit.wechat")}
-          html={basics.wechat}
-          placeholder={t("edit.wechat")}
-          multiline={false}
-          onChange={(v) => updatePlain("wechat", v)}
-        />
-        <EditableField
-          ariaLabel={t("edit.website")}
-          html={basics.website}
-          placeholder={t("edit.website")}
-          multiline={false}
-          onChange={(v) => updatePlain("website", v)}
-        />
+        {fields.map((field) => {
+          const value = readBasicField(basics, field, locale);
+          return (
+            <EditableField
+              key={field.id}
+              ariaLabel={t(field.labelKey)}
+              html={value}
+              placeholder={t(field.labelKey)}
+              multiline={false}
+              className={cn(
+                field.fieldKey === "phone" && "rs-inline-plain",
+                !value && "rs-empty",
+              )}
+              onChange={(v) =>
+                field.localized
+                  ? updateLocalized(field.fieldKey as BasicLocalizedField, locale, v)
+                  : updatePlain(field.fieldKey as BasicPlainField, v)
+              }
+            />
+          );
+        })}
       </div>
     </div>
   );
@@ -120,80 +107,5 @@ function SectionHeadBlock({ block, locale }: { block: Extract<Block, { type: "se
   );
 }
 
-function ItemBlock({ block, locale }: { block: Extract<Block, { type: "item" }>; locale: Locale }) {
-  const { t } = useI18n();
-  const item = block.item;
-  const updateLocalized = useResumeStore((s) => s.updateItemLocalized);
-  const updateDesc = useResumeStore((s) => s.updateItemDesc);
-
-  const date = itemDateLabel(item, locale);
-  const showHeader = block.hasHeader || Boolean(localizedText(item.title, locale));
-
-  return (
-    <div className="rs-item">
-      {showHeader && (
-        <div className="rs-item-head">
-          <div>
-            <EditableField
-              ariaLabel={t("edit.itemTitlePlaceholder")}
-              html={localizedText(item.title, locale)}
-              placeholder={t("edit.itemTitlePlaceholder")}
-              multiline={false}
-              className="rs-item-title"
-              onChange={(v) => updateLocalized(block.sectionId, item.id, "title", locale, v)}
-            />
-            <EditableField
-              ariaLabel={t("edit.itemSubtitlePlaceholder")}
-              html={localizedText(item.subtitle, locale)}
-              placeholder={t("edit.itemSubtitlePlaceholder")}
-              multiline={false}
-              className="rs-item-sub"
-              onChange={(v) => updateLocalized(block.sectionId, item.id, "subtitle", locale, v)}
-            />
-          </div>
-          {date && <div className="rs-item-date">{date}</div>}
-        </div>
-      )}
-      <div className="rs-desc">
-        <EditableField
-          ariaLabel={t("edit.summaryPlaceholder")}
-          html={localizedText(item.description, locale)}
-          placeholder={t("edit.summaryPlaceholder")}
-          rich
-          onChange={(v) => updateDesc(block.sectionId, item.id, locale, v)}
-        />
-      </div>
-    </div>
-  );
-}
-
-function SkillGroupBlock({ block, locale }: { block: Extract<Block, { type: "skill-group" }>; locale: Locale }) {
-  const { t } = useI18n();
-  const group = block.group;
-  const updateName = useResumeStore((s) => s.updateGroupName);
-  const updateItems = useResumeStore((s) => s.updateGroupItems);
-
-  const itemsText = localizedText(group.items, locale);
-
-  return (
-    <div className="rs-skill-group">
-      <EditableField
-        ariaLabel={t("edit.groupNamePlaceholder")}
-        html={localizedText(group.name, locale)}
-        placeholder={t("edit.groupNamePlaceholder")}
-        multiline={false}
-        className="rs-skill-name"
-        onChange={(v) => updateName(block.sectionId, group.id, locale, v)}
-      />
-      <div className="rs-skill-items">
-        <EditableField
-          ariaLabel={t("edit.skillItemPlaceholder")}
-          html={itemsText}
-          placeholder={t("edit.skillItemPlaceholder")}
-          multiline
-          onChange={(v) => updateItems(block.sectionId, group.id, locale, v)}
-        />
-      </div>
-    </div>
-  );
-}
+// 条目块与技能分组块的渲染已迁到章节类型插件（plugins/section-types/*），
+// 由各自插件的 renderBlock 提供，本文件不再按块类型写死渲染逻辑。

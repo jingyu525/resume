@@ -4,6 +4,7 @@ import { Button } from "@/shared/ui/button";
 import { LanguageSwitcher } from "@/features/language-switch/LanguageSwitcher";
 import { DEFAULT_APPEARANCE } from "@/entities/appearance/model";
 import { resolveResumeTheme } from "@/shared/config/presets";
+import { getTheme } from "@/plugins/core/registry";
 import { Github, FileText, Type, Bot, Code2, HardDrive, Lock } from "lucide-react";
 import { LandingHero } from "@/widgets/landing-hero/LandingHero";
 import { LandingFeatures } from "@/widgets/landing-features/LandingFeatures";
@@ -23,7 +24,8 @@ const ENGINEERING = [
 
 export function LandingPage() {
   const { t } = useI18n();
-  const theme = resolveResumeTheme(DEFAULT_APPEARANCE);
+  const themePlugin = getTheme(DEFAULT_APPEARANCE.theme);
+  const theme = { ...resolveResumeTheme(DEFAULT_APPEARANCE), ...(themePlugin?.cssVars ?? {}) };
 
   return (
     <div className="min-h-screen">

@@ -17,7 +17,7 @@ export function exportBackup() {
   a.download = `resume-studio-backup-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
-  savePersisted(payload);
+  void savePersisted(payload);
 }
 
 /** 导入备份：读取本地文件并恢复（带 schema 校验，失败给出明确提示，FR-9） */

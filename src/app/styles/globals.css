@@ -120,7 +120,8 @@ body {
 .rs-name {
   font-family: var(--rs-heading-font);
   font-weight: var(--rs-heading-weight);
-  font-size: 1.9em;
+  font-size: var(--rs-name-size, 1.9em);
+  text-transform: var(--rs-name-transform, none);
   line-height: 1.1;
   color: #111;
 }
@@ -149,11 +150,11 @@ body {
   font-family: var(--rs-heading-font);
   font-weight: var(--rs-heading-weight);
   color: var(--rs-accent);
-  border-bottom: 1.5px solid var(--rs-accent);
+  border-bottom: var(--rs-section-rule, 1.5px solid var(--rs-accent));
   padding-bottom: 2px;
   margin-bottom: var(--rs-gap);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--rs-section-spacing, 0.04em);
   font-size: 1.05em;
 }
 .rs-item {
@@ -274,5 +275,9 @@ a {
   }
   .no-print {
     display: none !important;
+  }
+  /* 未填写的联系方式在屏幕上是灰色占位引导，上纸时必须收掉，否则打印出"电话/邮箱"空壳 */
+  .rs-contact .rs-empty {
+    display: none;
   }
 }

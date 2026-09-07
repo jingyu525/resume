@@ -12,7 +12,8 @@ import type {
   ResumeSection,
   SectionKind,
 } from "@/entities/resume/model";
-import { createEmptyResume, createSampleResume } from "@/entities/resume/defaults";
+import { createEmptyResume, createSampleResume } from "@/plugins/resume-template";
+import { getSectionType } from "@/plugins/core/registry";
 import { newId } from "@/shared/lib/id";
 import { loadPersisted } from "./persistence";
 
@@ -133,10 +134,12 @@ export const useResumeStore = create<ResumeState>()(
       addSection: (kind) =>
         set((s) => {
           const order = s.resume.sections.length;
+          // 默认标题取自章节类型插件（五语齐全）；插件缺失时留空由用户填写，绝不写死兜底文案
+          const plugin = getSectionType(kind);
           const section: ResumeSection = {
             id: newId("sec"),
             kind,
-            title: { zh: defaultSectionTitle(kind, "zh"), en: defaultSectionTitle(kind, "en") },
+            title: plugin ? { ...plugin.defaultTitle } : {},
             visible: true,
             order,
             items: [],
@@ -315,16 +318,7 @@ export const useResumeStore = create<ResumeState>()(
   ),
 );
 
-function defaultSectionTitle(kind: SectionKind, locale: Locale): string {
-  const map: Record<SectionKind, Record<Locale, string>> = {
-    summary: { zh: "自我评价", en: "Summary", ja: "自己PR", de: "Profil", ko: "자기소개" },
-    experience: { zh: "工作经历", en: "Experience", ja: "職歴", de: "Erfahrung", ko: "경력" },
-    project: { zh: "项目经历", en: "Projects", ja: "プロジェクト", de: "Projekte", ko: "프로젝트" },
-    education: { zh: "教育背景", en: "Education", ja: "学歴", de: "Ausbildung", ko: "학력" },
-    skills: { zh: "专业技能", en: "Skills", ja: "スキル", de: "Kompetenzen", ko: "기술" },
-  };
-  return map[kind][locale];
-}
+// 默认章节标题表已删除：唯一真源是各章节类型插件的 defaultTitle（此前两份表 ja/de/ko 还不一致）
 
 /** 访问 zundo 时间旅行状态（撤销/重做），供 React 组件订阅 */
 export function useTemporalStore<T>(

@@ -1,24 +1,31 @@
 import type { AppearancePref } from "@/entities/appearance/model";
 import { DEFAULT_APPEARANCE } from "@/entities/appearance/model";
 import type { ResumeData, ResumeSection, SectionKind } from "@/entities/resume/model";
-import { createEmptyResume } from "@/entities/resume/defaults";
+import type { PersistedState } from "@/entities/resume/persist";
+import { createEmptyResume } from "@/plugins/resume-template";
 import { LOCALES, type Locale } from "@/entities/locale";
+import { registeredLocales } from "@/plugins/core/registry";
 
-export const STORAGE_VERSION = 1;
+/** v2：章节/条目新增 fields（插件扩展字段容器） */
+export const STORAGE_VERSION = 2;
 
-export interface PersistedState {
-  version: number;
-  resume: ResumeData;
-  appearance: AppearancePref;
+export type { PersistedState };
+
+/**
+ * 当前已知语言：优先取注册表（内置五语 + 已安装语言包）。
+ *
+ * 注册表尚未就绪时（如单元测试未 bootstrap）退化为内置清单——
+ * 绝不能返回空集合，否则 sanitizeLocales 会把所有语言字段删光，等于静默丢数据。
+ */
+function knownLocales(): string[] {
+  try {
+    const registered = registeredLocales();
+    if (registered.length > 0) return registered;
+  } catch {
+    // 注册表不可用：走兜底
+  }
+  return [...LOCALES];
 }
-
-const VALID_KINDS: SectionKind[] = [
-  "summary",
-  "experience",
-  "project",
-  "education",
-  "skills",
-];
 
 /** 基础校验 + 向前兼容迁移（FR-9）：升级不丢数据、不报错 */
 export function migrate(raw: unknown): PersistedState {
@@ -39,9 +46,11 @@ export function migrate(raw: unknown): PersistedState {
   const resume = normalizeResume(obj.resume, fallback.resume);
   const appearance = normalizeAppearance(obj.appearance, fallback.appearance);
 
-  // 未来版本迁移钩子（示例）
+  // 版本迁移钩子：v1 → v2 补齐章节/条目的插件扩展字段（fields）
   switch (version) {
     case 1:
+      upgradeV1ToV2(resume);
+      break;
     default:
       break;
   }
@@ -63,6 +72,8 @@ function normalizeAppearance(
       typeof o.density === "number"
         ? Math.min(1, Math.max(0, o.density))
         : fallback.density,
+    // theme：旧备份无此字段时退化为默认 classic（M6 主题可插件安装，绝不因缺字段崩溃）
+    theme: typeof o.theme === "string" && o.theme ? o.theme : fallback.theme,
   };
 }
 
@@ -93,8 +104,11 @@ function normalizeResume(r: unknown, fallback: ResumeData): ResumeData {
 function normalizeSection(s: unknown, index: number): ResumeSection | null {
   if (!s || typeof s !== "object") return null;
   const o = s as Record<string, unknown>;
-  const kind = o.kind as SectionKind;
-  if (!VALID_KINDS.includes(kind)) return null;
+  // 关键：未知 kind 不再丢弃整节。插件章节与内置章节共存，
+  // 若按白名单 return null，用户未安装插件时其章节会被静默删除（FR-9 升级不丢数据）。
+  // 未注册的 kind 保留原值，渲染时由 buildBlocks 跳过、编辑区提示"缺少插件"。
+  const kind = typeof o.kind === "string" && o.kind ? (o.kind as SectionKind) : null;
+  if (!kind) return null;
   const items = Array.isArray(o.items) ? (o.items as unknown[]) : [];
   const groups = Array.isArray(o.groups) ? (o.groups as unknown[]) : [];
   return {
@@ -112,6 +126,7 @@ function normalizeItem(it: unknown, index: number): Record<string, unknown> | nu
   if (!it || typeof it !== "object") return null;
   const o = it as Record<string, unknown>;
   return {
+    ...o, // 保留插件扩展字段，未安装插件时数据不丢
     id: typeof o.id === "string" ? o.id : `it_${index}`,
     title: (o.title as Record<Locale, string>) ?? {},
     subtitle: (o.subtitle as Record<Locale, string>) ?? {},
@@ -119,6 +134,7 @@ function normalizeItem(it: unknown, index: number): Record<string, unknown> | nu
     endDate: typeof o.endDate === "string" ? o.endDate : "",
     current: o.current === true,
     description: (o.description as Record<Locale, string>) ?? {},
+    fields: (o.fields as Record<string, unknown>) ?? {},
   };
 }
 
@@ -126,10 +142,18 @@ function normalizeGroup(g: unknown, index: number): Record<string, unknown> | nu
   if (!g || typeof g !== "object") return null;
   const o = g as Record<string, unknown>;
   return {
+    ...o, // 同上：保留扩展字段
     id: typeof o.id === "string" ? o.id : `grp_${index}`,
     name: (o.name as Record<Locale, string>) ?? {},
     items: (o.items as Record<Locale, string>) ?? {},
   };
+}
+
+/** v1 → v2：补齐插件扩展字段容器（fields），旧数据无此字段也能正常工作 */
+function upgradeV1ToV2(resume: ResumeData): void {
+  for (const section of resume.sections) {
+    if (!section.fields) section.fields = {};
+  }
 }
 
 /** 校验导入备份文件结构（FR-9） */
@@ -146,13 +170,15 @@ export function validateBackup(raw: unknown): raw is PersistedState {
 
 function sanitizeLocales(resume: unknown) {
   const r = resume as { basics?: Record<string, Record<string, string>>; sections?: unknown[] };
+  // 按"已注册语言"过滤：固定 LOCALES 会把新装语言包写入的内容删掉（M3 必须用注册表）
+  const known = knownLocales();
   const scrub = (obj: Record<string, Record<string, string>> | undefined) => {
     if (!obj) return;
     for (const key of Object.keys(obj)) {
       const f = obj[key];
       if (f && typeof f === "object") {
         for (const l of Object.keys(f)) {
-          if (!(LOCALES as string[]).includes(l)) delete f[l];
+          if (!known.includes(l)) delete f[l];
         }
       }
     }

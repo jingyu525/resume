@@ -11,6 +11,8 @@ export interface AppearancePref {
   tone: Tone;
   /** 疏密：0（紧凑）~ 1（舒展） */
   density: number;
+  /** 主题：注册表里的 ThemePlugin id（M6 起可插件安装，默认 classic） */
+  theme: string;
 }
 
 export const DEFAULT_APPEARANCE: AppearancePref = {
@@ -18,4 +20,5 @@ export const DEFAULT_APPEARANCE: AppearancePref = {
   accent: "#2563EB",
   tone: "formal",
   density: 0.5,
+  theme: "classic",
 };

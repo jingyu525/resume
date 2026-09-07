@@ -3,6 +3,7 @@ import type { Locale } from "@/entities/locale";
 import type { AppearancePref } from "@/entities/appearance/model";
 import type { ResumeData } from "@/entities/resume/model";
 import { A4, SAFE_ZONE_MM, pageMarginMm, resolveResumeTheme } from "@/shared/config/presets";
+import { getTheme } from "@/plugins/core/registry";
 import { useI18n } from "@/shared/i18n";
 import { buildBlocks, type Block } from "./buildBlocks";
 import { distributeBlocks } from "./distribute";
@@ -26,7 +27,16 @@ export function PaginatedResume({
   onTotalPages,
 }: PaginatedResumeProps) {
   const { t } = useI18n();
-  const theme = resolveResumeTheme(appearance);
+  // 主题插件贡献的 CSS 变量合并进简历根节点（M6：主题可插件安装）
+  const themePlugin = getTheme(appearance.theme);
+  const theme: CSSProperties = {
+    ...(resolveResumeTheme(appearance) as CSSProperties),
+    ...(themePlugin?.cssVars ?? {}),
+  };
+  if (themePlugin?.fonts) {
+    (theme as Record<string, string>)["--rs-heading-font"] = themePlugin.fonts.heading;
+    (theme as Record<string, string>)["--rs-body-font"] = themePlugin.fonts.body;
+  }
   const marginMm = pageMarginMm(appearance.density);
   const mainWidthMm =
     appearance.layout === "sidebar"

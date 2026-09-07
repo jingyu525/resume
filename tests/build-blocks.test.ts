@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildBlocks, itemDateLabel, type Block } from "@/features/pagination/buildBlocks";
-import { createSampleResume } from "@/entities/resume/defaults";
+import { createSampleResume } from "@/plugins/resume-template";
 import type { ResumeData, ResumeSection, ResumeItem } from "@/entities/resume/model";
 
 type HeadBlock = Extract<Block, { type: "section-head" }>;

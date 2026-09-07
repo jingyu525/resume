@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { createSampleResume } from "@/entities/resume/defaults";
+import { createSampleResume } from "@/plugins/resume-template";
 import { DEFAULT_APPEARANCE, type AppearancePref } from "@/entities/appearance/model";
 import { STORAGE_VERSION, validateBackup } from "@/store/migrations";
 import { importPersisted } from "@/store/persistence";
+import type { ResumeData } from "@/entities/resume/model";
 
 /** 模拟"导出→落盘→重新读入"的纯数据往返（不涉及 Blob/DOM） */
 function roundtrip(resume: unknown, appearance: AppearancePref) {
@@ -13,11 +14,19 @@ function roundtrip(resume: unknown, appearance: AppearancePref) {
 }
 
 describe("导出→导入往返一致性（FR-9 闭环）", () => {
-  it("示例简历往返后结构与内容等价", () => {
+  it("示例简历往返后内容与结构等价（v2 迁移补的扩展容器 fields 不计入差异）", () => {
     const resume = createSampleResume();
     const appearance = { ...DEFAULT_APPEARANCE };
     const back = roundtrip(resume, appearance);
-    expect(back.resume).toEqual(resume);
+    // v2 迁移会为每个条目/章节补 fields: {} 扩展容器；这是无损扩展，往返比较时剔除
+    const stripExt = (r: ResumeData) => {
+      for (const s of r.sections) {
+        delete s.fields;
+        for (const it of s.items) delete it.fields;
+      }
+      return r;
+    };
+    expect(stripExt(back.resume)).toEqual(stripExt(resume));
     expect(back.appearance).toEqual(appearance);
   });
 
@@ -30,21 +39,21 @@ describe("导出→导入往返一致性（FR-9 闭环）", () => {
     expect(name.zh).toBeDefined();
   });
 
-  it("非法 kind 的章节在导入时被丢弃", () => {
+  it("未知 kind 的章节在导入时保留（不静默丢弃，FR-9 升级不丢数据）", () => {
     const resume = createSampleResume();
     (resume.sections as unknown[]).push({
       id: "x",
       kind: "bogus",
-      title: {},
+      title: { zh: "证书" },
       visible: true,
       order: 99,
       items: [],
       groups: [],
     });
     const back = roundtrip(resume, { ...DEFAULT_APPEARANCE });
-    expect(
-      back.resume.sections.find((s) => (s as { kind: string }).kind === "bogus"),
-    ).toBeUndefined();
+    const kept = back.resume.sections.find((s) => (s as { kind: string }).kind === "bogus");
+    expect(kept).toBeDefined();
+    expect((kept as { title: Record<string, string> }).title.zh).toBe("证书");
   });
 
   it("密度越界被收敛到 [0,1]", () => {

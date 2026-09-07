@@ -1,28 +1,21 @@
 import type { Locale } from "@/entities/locale";
 import type { Layout } from "@/entities/appearance/model";
-import type { ResumeData, ResumeItem, SkillGroup } from "@/entities/resume/model";
-import { localizedText } from "@/shared/lib/localized";
+import type { ResumeData, ResumeItem } from "@/entities/resume/model";
 import { formatPeriod } from "@/shared/lib/format";
+// Block / BlockTree 定义在 shared/types/block.ts：章节类型插件要用它描述产出，
+// 而插件层不得反向依赖 features（规则 A4）。此处 re-export，调用方无需改动。
+import type { Block, BlockTree } from "@/shared/types/block";
+import { getSectionType } from "@/plugins/core/registry";
 
-export type Block =
-  | { id: string; type: "basics"; keepWithNext?: boolean }
-  | { id: string; type: "section-head"; sectionId: string; title: string; keepWithNext: boolean }
-  | {
-      id: string;
-      type: "item";
-      sectionId: string;
-      hasHeader: boolean;
-      item: ResumeItem;
-      keepWithNext?: boolean;
-    }
-  | { id: string; type: "skill-group"; sectionId: string; group: SkillGroup; keepWithNext?: boolean };
+export type { Block, BlockTree };
 
-export interface BlockTree {
-  sidebar: Block[];
-  main: Block[];
-}
-
-/** 将简历内容转为有序、不可拆的"原子块"列表（FR-7 单块不跨页的基础） */
+/**
+ * 将简历内容转为有序、不可拆的"原子块"列表（FR-7 单块不跨页的基础）。
+ *
+ * 产块方式由章节类型插件决定（规则 G5：此处不得再按 kind 分支）：
+ * 插件通过 toBlocks 声明自己切成几个块、块是否 keepWithNext，
+ * 通过 placement 声明侧栏版式下归入侧栏还是主栏。
+ */
 export function buildBlocks(resume: ResumeData, locale: Locale, layout: Layout): BlockTree {
   const basics: Block = { id: "basics", type: "basics" };
   const sidebar: Block[] = [];
@@ -30,45 +23,16 @@ export function buildBlocks(resume: ResumeData, locale: Locale, layout: Layout):
 
   const ordered = [...resume.sections].sort((a, b) => a.order - b.order);
 
-  const pushSection = (target: Block[], section: (typeof ordered)[number]) => {
-    const title = localizedText(section.title, locale) || "";
-    const head: Block = {
-      id: `head_${section.id}`,
-      type: "section-head",
-      sectionId: section.id,
-      title,
-      keepWithNext:
-        section.items.length > 0 || (section.kind === "skills" && section.groups.length > 0),
-    };
-    target.push(head);
-    if (section.kind === "skills") {
-      for (const g of section.groups) {
-        target.push({ id: `grp_${g.id}`, type: "skill-group", sectionId: section.id, group: g });
-      }
-    } else {
-      for (const it of section.items) {
-        target.push({
-          id: `it_${it.id}`,
-          type: "item",
-          sectionId: section.id,
-          hasHeader: section.kind !== "summary",
-          item: it,
-        });
-      }
-    }
-  };
-
   for (const section of ordered) {
     if (!section.visible) continue;
-    if (layout === "sidebar") {
-      // 侧栏：基本信息 + 自我评价 + 专业技能；主栏：其余经历类
-      if (section.kind === "skills" || section.kind === "summary") {
-        pushSection(sidebar, section);
-      } else {
-        pushSection(main, section);
-      }
+    const plugin = getSectionType(section.kind);
+    // 未安装/已禁用插件的章节：数据保留（migrate 保证），此处不渲染，避免整页崩溃
+    if (!plugin) continue;
+    const blocks = plugin.toBlocks(section, { locale, layout });
+    if (layout === "sidebar" && plugin.placement === "sidebar") {
+      sidebar.push(...blocks);
     } else {
-      pushSection(main, section);
+      main.push(...blocks);
     }
   }
 

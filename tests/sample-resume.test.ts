@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { LOCALES } from "@/entities/locale";
-import { createSampleResume, createEmptyResume } from "@/entities/resume/defaults";
+import { createSampleResume, createEmptyResume } from "@/plugins/resume-template";
 import type { Localized } from "@/entities/resume/model";
 
 function expectAllLangs<T>(field: Localized<T> | undefined, label: string): void {
