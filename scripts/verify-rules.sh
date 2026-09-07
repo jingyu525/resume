@@ -102,6 +102,15 @@ if [ "$HAS_RG" = "1" ]; then
   fi
 fi
 
+# 6. i18n key 完整性：引用 key 必须定义且五语齐全（t() 缺失会静默回退成 key 原文）
+if command -v node >/dev/null 2>&1; then
+  if ! node scripts/verify-i18n-keys.mjs; then
+    fails=$((fails + 1))
+  fi
+else
+  echo "- i18n key 校验已跳过（未安装 node）"
+fi
+
 echo "──── 结果 ────"
 if [ "$fails" -gt 0 ]; then
   echo "阻断：${fails} 条规则未通过${warns:+（另有 ${warns} 条警告）}"

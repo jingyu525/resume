@@ -34,6 +34,9 @@
 - MUST 用 `useI18n().t()` 取文案；注意 `translate(locale, key, params)` 第一个参数是 locale。
 - MUST 让新的简历正文字段使用 `Localized<T>` 并经 `localizedValue` 读取，以继承回退链。
 - MUST 让承载界面文案的定宽/单行控件可收缩或省略：tab / 菜单项 / 导航 / 工具条标签用 `.i18n-truncate`（单行省略 + `title` 完整文本），不写死固定宽度把长译文（德/日/韩）挤出压住相邻元素；可换行的卡片标题用 `.i18n-clamp-2`。全局已对 `button`/`a`/`[role=tab]`/`[role=menuitem]` 设 `min-width:0` 允许收缩。
+- MUST 让经变量传入 `t()` 的 i18n key（典型如 `shared/config/presets.ts` 的 `labelKey: "appearance.layout.single"`）真实存在于字典，且命名空间前缀与字典一致。`t("layout.single")` 这类**前缀写错**的 key 普通 `t("...")` 静态扫描扫不到，专由 `node scripts/verify-i18n-keys.mjs` 覆盖（`t()` 字面量 + `labelKey:` 字面量 + 五语完整性三轨）。
+- MUST NOT 依赖 `t()` 的静默回退兜底：key 缺失时 `t()` 返回 **key 原文**（如界面出现 `layout.single`、`editor.edit`），看起来像正常文案却实为 bug。提交前由 `verify-i18n-keys.mjs` 阻断。
+- 新增/修改任意 key 后跑 `node scripts/verify-i18n-keys.mjs`（已接入 `verify:rules` 与 pre-commit）；该检查与 `tests/i18n-keys.test.ts` 双保险。
 
 **UI / 样式 / 打印**
 - MUST 只用 `lucide-react` 作图标，MUST NOT 用 emoji 充当 UI 图标或装饰。（`rg -n '[\p{Emoji_Presentation}]' src/` 必须为 0）

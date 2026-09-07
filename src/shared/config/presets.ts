@@ -16,14 +16,14 @@ export const ACCENT_COLORS: { value: string; label: string }[] = [
 ];
 
 export const LAYOUTS: { value: Layout; labelKey: string }[] = [
-  { value: "single", labelKey: "layout.single" },
-  { value: "sidebar", labelKey: "layout.sidebar" },
+  { value: "single", labelKey: "appearance.layout.single" },
+  { value: "sidebar", labelKey: "appearance.layout.sidebar" },
 ];
 
 export const TONES: { value: Tone; labelKey: string }[] = [
-  { value: "formal", labelKey: "tone.formal" },
-  { value: "soft", labelKey: "tone.soft" },
-  { value: "lively", labelKey: "tone.lively" },
+  { value: "formal", labelKey: "appearance.tone.formal" },
+  { value: "soft", labelKey: "appearance.tone.soft" },
+  { value: "lively", labelKey: "appearance.tone.lively" },
 ];
 
 /** density(0~1) -> 页边距(mm)，紧凑↔舒展 */
