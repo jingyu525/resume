@@ -394,7 +394,15 @@ export const useResumeStore = create<ResumeState>()(
  * 恢复改为显式调用后，时序由 main.tsx 保证，与插件注册顺序解耦。
  */
 export function hydrateFromPersisted(): boolean {
-  const persisted = loadPersisted();
+  // 双保险：loadPersisted() 内部已兜底，这里防的是任何未预料的异常。
+  // 本节一旦抛出，main.tsx 后续的 createRoot 不会执行，用户看到整页白屏。
+  let persisted: ReturnType<typeof loadPersisted> = null;
+  try {
+    persisted = loadPersisted();
+  } catch {
+    persisted = null;
+  }
+
   if (!persisted) {
     // 首次访问（本地无数据）：此时注册表已就绪，用正确的默认章节初始化。
     // 模块顶层的 `resume: createEmptyResume()` 会在 bootstrapPlugins() 之前求值

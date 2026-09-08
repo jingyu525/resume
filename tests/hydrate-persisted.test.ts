@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import * as persistence from "@/store/persistence";
 import { DEFAULT_APPEARANCE } from "@/entities/appearance/model";
 import { STORAGE_VERSION } from "@/store/migrations";
 
@@ -94,4 +95,11 @@ describe("本地存储恢复（FR-9）", () => {
     // 补种不是一次编辑，不该进撤销历史
     expect(useResumeStore.temporal.getState().pastStates.length).toBe(0);
   });
+
+  it("读取正常时不留失败标记", async () => {
+    installMemoryStorage();
+    expect(persistence.loadPersisted()).toBeNull();
+    expect(persistence.loadError()).toBeNull();
+  });
+
 });

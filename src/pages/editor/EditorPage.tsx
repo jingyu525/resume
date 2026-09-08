@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/shared/i18n";
+import { useToast } from "@/shared/ui/toast";
+import { loadError } from "@/store/persistence";
 import { useUndoRedoShortcuts } from "@/features/undo-redo/UndoRedo";
 import { useExitGuard } from "@/features/persistence/useExitGuard";
 import { EditPanel } from "@/features/resume-editing/EditPanel";
@@ -17,10 +19,17 @@ export function EditorPage() {
   useUndoRedoShortcuts();
   useExitGuard();
   const { t } = useI18n();
+  const toast = useToast();
   const [showAppearance, setShowAppearance] = useState(false);
   const [mobileTab, setMobileTab] = useState<"edit" | "preview">("preview");
   const [onboarded, setOnboarded] = useState(() => getUiPref("rs_onboarded"));
   const [coach, setCoach] = useState(false);
+  // 本地数据读取失败时明确告知：否则"打不开"会被当成"简历被清空"
+  const [loadFailed] = useState(() => loadError() !== null);
+
+  useEffect(() => {
+    if (loadFailed) toast(t("toast.loadFailed"), "error");
+  }, [loadFailed, toast, t]);
 
   return (
     <div className="flex h-screen flex-col">
