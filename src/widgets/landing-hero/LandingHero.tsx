@@ -3,6 +3,9 @@ import { useI18n } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { ShieldCheck, ArrowRight, Github } from "lucide-react";
 
+// GitHub entry URL (enable by setting to your real repo)
+const GITHUB_URL = "https://github.com/jingyu525/resume";
+
 export function LandingHero() {
   const { t } = useI18n();
   const nav = useNavigate();
@@ -22,9 +25,11 @@ export function LandingHero() {
           <Button size="lg" onClick={() => nav("/editor")}>
             {t("hero.ctaPrimary")} <ArrowRight size={18} />
           </Button>
-          <Button size="lg" variant="outline" onClick={() => window.open("https://github.com", "_blank")}>
-            <Github size={18} /> {t("hero.ctaSecondary")}
-          </Button>
+          {GITHUB_URL && (
+            <Button size="lg" variant="outline" onClick={() => window.open(GITHUB_URL, "_blank")}>
+              <Github size={18} /> {t("hero.ctaSecondary")}
+            </Button>
+          )}
         </div>
       </div>
     </section>

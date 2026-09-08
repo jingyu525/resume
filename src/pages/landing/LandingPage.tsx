@@ -14,6 +14,9 @@ import { LandingHero } from "@/widgets/landing-hero/LandingHero";
 import { LandingFeatures } from "@/widgets/landing-features/LandingFeatures";
 import { LandingFooter } from "@/widgets/landing-footer/LandingFooter";
 
+// GitHub entry URL (enable by setting to your real repo)
+const GITHUB_URL = "https://github.com/jingyu525/resume";
+
 const WHY = [
   { key: "why.word", icon: FileText },
   { key: "why.markdown", icon: Type },
@@ -63,14 +66,16 @@ export function LandingPage() {
           </Link>
           <nav className="flex shrink-0 items-center gap-1">
             <LanguageSwitcher />
-            <a
-              href="https://github.com"
-              target="_blank"
-              rel="noreferrer"
-              className="hidden items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground sm:inline-flex"
-            >
-              <Github size={16} /> {t("nav.github")}
-            </a>
+            {GITHUB_URL && (
+              <a
+                href={GITHUB_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="hidden items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground sm:inline-flex"
+              >
+                <Github size={16} /> {t("nav.github")}
+              </a>
+            )}
             <Button size="sm" className="ml-1" onClick={() => navigate("/editor")}>
               {t("nav.try")}
             </Button>
