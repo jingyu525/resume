@@ -125,6 +125,16 @@ describe("S 组：安全与本地优先", () => {
     expectClean("S3", [F("src/plugins/bootstrap.ts", 'import { localStoragePlugin } from "./storage/local";')]);
   });
 
+  it("S3 UI 偏好（首用/PDF 引导）收口到 enabled.ts 的 getUiPref/setUiPref", () => {
+    // 收口点：enabled.ts 内经独立键 resume-studio:ui-prefs:v1 持久化，不误报
+    expectClean("S3", [
+      F("src/plugins/core/enabled.ts", 'localStorage.setItem("resume-studio:ui-prefs:v1", JSON.stringify(next));'),
+    ]);
+    // 任何组件直接读写 UI 偏好键（绕过 helper）都必须命中，防止引导持久化散落各处
+    expectHit("S3", [F("src/widgets/first-run/FirstRunGuide.tsx", 'localStorage.setItem("rs_onboarded", "1");')]);
+    expectHit("S3", [F("src/widgets/editor-toolbar/ExportMenu.tsx", 'localStorage.setItem("rs_pdfGuideDismissed", "1");')]);
+  });
+
   it("S4 插件内注入 HTML 命中", () => {
     expectHit("S4", [F("src/plugins/section-types/x.tsx", "<div dangerouslySetInnerHTML={{ __html: h }} />")]);
   });

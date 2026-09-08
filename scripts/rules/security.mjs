@@ -13,8 +13,10 @@ export const FETCH_ALLOWLIST = ["src/plugins/core/authorizedFetch.ts"];
 /**
  * 允许直接使用 localStorage 的位置：
  * - src/store/persistence.ts：M1 之前的现状（M1 改造为调用 storage 插件后由 S3b 接管）
- * - src/plugins/core/enabled.ts：插件启用状态持久化（视图态，独立键，不进撤销历史）
- * - src/plugins/storage/**：存储插件实现本体
+ * - src/plugins/core/enabled.ts：插件启用状态（视图态，独立键 resume-studio:plugins:v1，不进撤销历史）
+ *   + 首用/导出引导等 UI 偏好（视图态，独立键 resume-studio:ui-prefs:v1，不进 resume/appearance/zundo），
+ *   经 getUiPref/setUiPref 收口，组件只允许调这两个 helper，禁止直接读写 localStorage
+ * - src/plugins/storage/**：存储插件实现本体（简历数据）
  */
 export const STORAGE_ALLOWLIST_PREFIXES = ["src/plugins/storage/", "src/plugins/core/enabled.ts"];
 const LEGACY_STORAGE_FILE = "src/store/persistence.ts";
