@@ -12,4 +12,5 @@ export const modernTheme: ThemePlugin = {
     "--rs-section-spacing": "0.08em",
     "--rs-name-size": "1.9em",
   },
+  preset: { layout: "single", accent: "#0EA5E9", tone: "lively", density: 0.42 },
 };

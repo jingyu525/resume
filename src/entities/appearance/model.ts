@@ -15,6 +15,14 @@ export interface AppearancePref {
   theme: string;
 }
 
+/** 主题级风格预设：选主题时一键套用的完整外观基线（FR-5 风格优先）。 */
+export interface ThemePreset {
+  layout?: Layout;
+  accent?: string;
+  tone?: Tone;
+  density?: number;
+}
+
 export const DEFAULT_APPEARANCE: AppearancePref = {
   layout: "single",
   accent: "#2563EB",

@@ -12,4 +12,5 @@ export const editorialTheme: ThemePlugin = {
     "--rs-section-spacing": "0.02em",
     "--rs-name-size": "2.15em",
   },
+  preset: { layout: "sidebar", accent: "#7C3AED", tone: "soft", density: 0.5 },
 };

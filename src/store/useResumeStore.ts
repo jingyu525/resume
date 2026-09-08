@@ -13,7 +13,8 @@ import type {
   SectionKind,
 } from "@/entities/resume/model";
 import { createEmptyResume, createSampleResume, createRoleResume, type RoleId } from "@/plugins/resume-template";
-import { getSectionType } from "@/plugins/core/registry";
+import { getSectionType, getTheme } from "@/plugins/core/registry";
+import { applyThemePreset } from "@/shared/lib/themePreset";
 import { newId } from "@/shared/lib/id";
 import { loadPersisted } from "./persistence";
 
@@ -71,6 +72,8 @@ interface ResumeState {
 
   setAppearance: (patch: Partial<AppearancePref>) => void;
   resetAppearance: () => void;
+  /** 选主题：一键套用其风格预设（版式/主色/气质/疏密），未声明项保留原值 */
+  applyTheme: (themeId: string) => void;
 
   fillSample: () => void;
   clearAll: () => void;
@@ -293,6 +296,9 @@ export const useResumeStore = create<ResumeState>()(
 
       setAppearance: (patch) => set((s) => ({ appearance: { ...s.appearance, ...patch } })),
       resetAppearance: () => set({ appearance: { ...DEFAULT_APPEARANCE } }),
+
+      applyTheme: (themeId) =>
+        set((s) => ({ appearance: applyThemePreset(s.appearance, getTheme(themeId)) })),
 
       fillSample: () => set({ resume: createSampleResume() }),
       clearAll: () => set({ resume: createEmptyResume() }),

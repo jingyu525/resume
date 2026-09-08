@@ -22,4 +22,5 @@ export const academicTheme: ThemePlugin = {
     heading: "Georgia, 'Times New Roman', 'Songti SC', serif",
     body: "'Inter', 'PingFang SC', system-ui, sans-serif",
   },
+  preset: { layout: "sidebar", accent: "#1f2937", tone: "formal", density: 0.55 },
 };

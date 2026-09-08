@@ -12,4 +12,5 @@ export const minimalTheme: ThemePlugin = {
     "--rs-section-spacing": "0.06em",
     "--rs-name-size": "1.85em",
   },
+  preset: { layout: "single", accent: "#0F172A", tone: "formal", density: 0.62 },
 };

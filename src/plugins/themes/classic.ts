@@ -12,4 +12,5 @@ export const classicTheme: ThemePlugin = {
     "--rs-section-spacing": "0.04em",
     "--rs-name-size": "1.9em",
   },
+  preset: { layout: "single", accent: "#2563EB", tone: "formal", density: 0.5 },
 };

@@ -4,7 +4,7 @@ import type { Locale } from "@/entities/locale";
 import type { Localized, ResumeData, ResumeItem, ResumeSection } from "@/entities/resume/model";
 import type { Block } from "@/shared/types/block";
 import type { PersistedState } from "@/entities/resume/persist";
-import type { AppearancePref } from "@/entities/appearance/model";
+import type { AppearancePref, ThemePreset } from "@/entities/appearance/model";
 
 /**
  * 插件契约总览（规则 C 组校验的正是这些字段）。
@@ -153,6 +153,8 @@ export interface ThemePlugin extends PluginBase {
   cssVars: Record<string, string>;
   /** 可选：覆盖 tone 决定的默认字体栈 */
   fonts?: { heading: string; body: string };
+  /** 可选：选主题时一键套用的风格基线（版式/主色/气质/疏密） */
+  preset?: ThemePreset;
 }
 
 export type Plugin =
