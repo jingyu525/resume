@@ -81,7 +81,25 @@ UI 文案由 `shared/i18n/dictionaries` 五语（中/英/日/德/韩）字典驱
 `resolveResumeTheme(appearance)` 将**主色 / 版式 / 气质 / 疏密**翻译为具体 CSS 变量（页边距、字号、行高、区块间距、字体族、标题字重），预览与打印共用，实现"选感觉而非选参数"。一键恢复默认。
 
 ### 5.6 持久化与备份（FR-9）
-`persistence` 订阅 store 防抖写 `localStorage`（版本字段 `v1`）。`migrations.migrate` 对旧/损坏数据向前兼容、剔除非法语言字段、保证升级不丢数据不报错。`backup-io` 导出/导入带 schema 校验（`validateBackup`）的 JSON 备份，失败给出明确提示。全程无后端、无账号、无上传。
+
+**唯一结构**：`PersistedState { version, resume, appearance }`（`entities/resume/persist.ts`）。本地存储、导出备份、导入恢复共用这一份，不存在第二种格式。
+
+- **存储**：`localStorage` 键 `resume-studio:v1`，由存储插件收口（规则 S3：全仓库仅存储插件与 `plugins/core/enabled.ts` 可直连 localStorage）。
+- **版本**：`STORAGE_VERSION = 2`（v1→v2 补齐章节/条目的插件扩展字段 `fields`）。注意键名里的 `v1` 是命名空间，与数据版本号无关。
+- **写盘**：`persistence` 订阅 store，防抖 600ms，与撤销历史解耦。
+
+**导入/导出走同一条迁移**：导出 = 当前 `{version, resume, appearance}` 序列化为 JSON 文件；导入 = `JSON.parse` → `validateBackup`（粗校验）→ 与冷启动恢复**同一个** `migrate` → `loadState`。因此导入对损坏数据的容错能力与冷启动完全一致。
+
+**模板 / 示例 / 主题不是数据，是生成数据的代码**：`createEmptyResume` / `createSampleResume` / `createRoleResume(role)` 与主题 `preset` 都在运行时物化成 `resume`/`appearance` 之后才落库。持久化**只存结果、不存来源**——备份文件里不会留下"用了哪个模板"的痕迹。
+
+由此产生四条硬约束（改动持久化前务必回到本节）：
+
+1. **备份自包含**：不依赖任何模板代码，换设备、换版本都能打开。
+2. **主题只存 id**：真正决定观感的是 `preset` 展开后的四轴值；目标环境未安装该主题插件时退化为默认，观感会变但不崩溃。
+3. **未知章节 kind 不删**（数据安全红线）：章节 kind 是唯一"指向代码"的字段。未安装插件时必须保留数据、渲染跳过、编辑区提示缺插件，**绝不静默丢弃**（FR-9 升级不丢数据）。
+4. **语言字段按"已注册语言"过滤**：用注册表而非固定清单，避免新装语言包写入的内容被清洗掉。
+
+全程无后端、无账号、无上传。
 
 ### 5.7 打印导出（FR-8）
 `print-export` 调用系统打印（`window.print()`）；`globals.css` 的 `@page A4` 与 `.print-area`/`.no-print` 规则保证仅输出 A4 矢量文字，屏幕专属元素不上纸。
