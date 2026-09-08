@@ -64,14 +64,15 @@ export function resetEnabledCache(): void {
  * 静默降级，符合规则 S3（localStorage 只允许存储插件与插件开关模块直接读写）。
  */
 const UI_PREF_KEY = "resume-studio:ui-prefs:v1";
-let uiPrefCache: Record<string, boolean> | null = null;
+type UiPrefValue = boolean | number;
+let uiPrefCache: Record<string, UiPrefValue> | null = null;
 
-function readUiPrefs(): Record<string, boolean> {
+function readUiPrefs(): Record<string, UiPrefValue> {
   if (uiPrefCache) return uiPrefCache;
   try {
     const raw = localStorage.getItem(UI_PREF_KEY);
     const parsed = raw ? (JSON.parse(raw) as unknown) : null;
-    uiPrefCache = parsed && typeof parsed === "object" ? (parsed as Record<string, boolean>) : {};
+    uiPrefCache = parsed && typeof parsed === "object" ? (parsed as Record<string, UiPrefValue>) : {};
   } catch {
     uiPrefCache = {};
   }
@@ -79,7 +80,7 @@ function readUiPrefs(): Record<string, boolean> {
 }
 
 export function getUiPref(key: string): boolean {
-  return readUiPrefs()[key] ?? false;
+  return readUiPrefs()[key] === true;
 }
 
 export function setUiPref(key: string, value: boolean): void {
@@ -89,5 +90,21 @@ export function setUiPref(key: string, value: boolean): void {
     localStorage.setItem(UI_PREF_KEY, JSON.stringify(next));
   } catch {
     // 静默：引导偏好不影响编辑
+  }
+}
+
+/** 数值型 UI 偏好（如编辑器栏宽度），与布尔偏好共用同一独立键，不进撤销历史。 */
+export function getUiPrefNumber(key: string, fallback: number): number {
+  const v = readUiPrefs()[key];
+  return typeof v === "number" && Number.isFinite(v) ? v : fallback;
+}
+
+export function setUiPrefNumber(key: string, value: number): void {
+  const next = { ...readUiPrefs(), [key]: value };
+  uiPrefCache = next;
+  try {
+    localStorage.setItem(UI_PREF_KEY, JSON.stringify(next));
+  } catch {
+    // 静默：视图态不影响编辑
   }
 }

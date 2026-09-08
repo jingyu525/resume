@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { useI18n } from "@/shared/i18n";
 import { useToast } from "@/shared/ui/toast";
 import { loadError } from "@/store/persistence";
@@ -10,10 +10,17 @@ import { AppearancePanel } from "@/features/appearance-control/AppearancePanel";
 import { EditorToolbar } from "@/widgets/editor-toolbar/EditorToolbar";
 import { PreviewPane } from "@/widgets/preview-pane/PreviewPane";
 import { FirstRunGuide } from "@/widgets/first-run/FirstRunGuide";
-import { getUiPref } from "@/plugins/core/enabled";
+import { getUiPref, getUiPrefNumber, setUiPrefNumber } from "@/plugins/core/enabled";
 import { Tabs } from "@/shared/ui/tabs";
 import { IconButton } from "@/shared/ui/button";
 import { X } from "lucide-react";
+
+/** 编辑器栏宽度约束（px）：窄屏不给编辑栏、宽屏不让预览被压成无法阅读 */
+const EDITOR_MIN_W = 300;
+const EDITOR_MAX_W = 560;
+const EDITOR_DEFAULT_W = 380;
+const PREVIEW_MIN_W = 320;
+const EDITOR_WIDTH_KEY = "rs_editor_width";
 
 /** 编辑器页：桌面左编辑面板 + 右 A4 预览；移动端底部 Tab 切换编辑/预览，默认进预览（FR-2） */
 export function EditorPage() {
@@ -22,6 +29,47 @@ export function EditorPage() {
   const { t } = useI18n();
   const toast = useToast();
   const [showAppearance, setShowAppearance] = useState(false);
+  // 桌面双栏可拖拽：编辑器栏宽度持久化，下次进入沿用上次比例
+  const [editorWidth, setEditorWidth] = useState(() => getUiPrefNumber(EDITOR_WIDTH_KEY, EDITOR_DEFAULT_W));
+  const containerRef = useRef<HTMLDivElement>(null);
+  const editorWidthRef = useRef(editorWidth);
+  const draggingRef = useRef(false);
+  editorWidthRef.current = editorWidth;
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!draggingRef.current || !containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const next = Math.round(e.clientX - rect.left);
+      const max = Math.min(EDITOR_MAX_W, rect.width - PREVIEW_MIN_W);
+      setEditorWidth(Math.max(EDITOR_MIN_W, Math.min(next, max)));
+    };
+    const onUp = () => {
+      if (!draggingRef.current) return;
+      draggingRef.current = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      setUiPrefNumber(EDITOR_WIDTH_KEY, editorWidthRef.current);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, []);
+
+  const startDrag = (e: ReactMouseEvent) => {
+    e.preventDefault();
+    draggingRef.current = true;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  };
+
+  const resetWidth = () => {
+    setEditorWidth(EDITOR_DEFAULT_W);
+    setUiPrefNumber(EDITOR_WIDTH_KEY, EDITOR_DEFAULT_W);
+  };
   const [mobileTab, setMobileTab] = useState<"edit" | "preview">("preview");
   const [onboarded, setOnboarded] = useState(() => getUiPref("rs_onboarded"));
   const [coach, setCoach] = useState(false);
@@ -39,11 +87,22 @@ export function EditorPage() {
     <div className="flex h-screen flex-col">
       <EditorToolbar onToggleAppearance={() => setShowAppearance((v) => !v)} />
 
-      {/* 桌面：双栏 */}
-      <div className="hidden min-h-0 flex-1 md:flex">
-        <aside className="w-[360px] shrink-0 overflow-auto border-r border-border">
+      {/* 桌面：双栏 + 可拖拽分隔条 */}
+      <div ref={containerRef} className="hidden min-h-0 flex-1 md:flex">
+        <aside style={{ width: editorWidth }} className="shrink-0 overflow-auto border-r border-border">
           <EditPanel />
         </aside>
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label={t("editor.resizeHandle")}
+          title={t("editor.resizeHandle")}
+          onMouseDown={startDrag}
+          onDoubleClick={resetWidth}
+          className="group relative w-1.5 shrink-0 cursor-col-resize bg-transparent transition-colors hover:bg-border/50"
+        >
+          <div className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-border group-hover:bg-primary/60" />
+        </div>
         <div className="min-h-0 flex-1">
           <PreviewPane coach={coach} />
         </div>

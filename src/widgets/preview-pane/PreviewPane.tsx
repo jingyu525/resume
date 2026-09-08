@@ -52,22 +52,24 @@ export function PreviewPane({ coach = false }: { coach?: boolean }) {
   }, []);
 
   return (
-    <div ref={wrapRef} className="h-full overflow-auto bg-secondary/40 p-4">
-      <div
-        className="mx-auto"
-        style={{ width: box.w * scale, height: box.h * scale }}
-      >
-        <div ref={innerRef} style={{ transform: `scale(${scale})`, transformOrigin: "top left" }}>
-          <PaginatedResume
-            resume={resume}
-            locale={locale}
-            appearance={appearance}
-            onTotalPages={setPages}
-            editors={{ updateBasicLocalized, updateBasicPlain, renameSection }}
-          />
+    <div className="relative h-full">
+      <div ref={wrapRef} className="h-full overflow-auto bg-secondary/40 p-4">
+        <div
+          className="mx-auto"
+          style={{ width: box.w * scale, height: box.h * scale }}
+        >
+          <div ref={innerRef} style={{ transform: `scale(${scale})`, transformOrigin: "top left" }}>
+            <PaginatedResume
+              resume={resume}
+              locale={locale}
+              appearance={appearance}
+              onTotalPages={setPages}
+              editors={{ updateBasicLocalized, updateBasicPlain, renameSection }}
+            />
+          </div>
         </div>
       </div>
-      <div className="pointer-events-none fixed bottom-4 left-1/2 z-30 -translate-x-1/2 rounded-full border border-border bg-popover/90 px-3 py-1 text-xs text-popover-foreground shadow-lg backdrop-blur no-print">
+      <div className="pointer-events-none absolute bottom-4 left-1/2 z-30 -translate-x-1/2 rounded-full border border-border bg-popover/90 px-3 py-1 text-xs text-popover-foreground shadow-lg backdrop-blur no-print">
         {t("editor.totalPages", { n: pages })}
       </div>
     </div>
