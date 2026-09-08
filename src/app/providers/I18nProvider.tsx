@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
 import { I18nContext, translate, type I18nContextValue } from "@/shared/i18n";
 import { getDictionaries } from "@/plugins/core/dict";
@@ -12,6 +12,12 @@ import { getDictionaries } from "@/plugins/core/dict";
 export function I18nProvider({ children }: { children: ReactNode }) {
   const locale = useResumeStore((s) => s.locale);
   const dicts = getDictionaries();
+
+  // 同步 <html lang>，帮助搜索引擎与无障碍工具识别当前界面语言（FR-6）
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
   const value: I18nContextValue = {
     locale,
     t: (k, p) => translate(locale, k, p, dicts),

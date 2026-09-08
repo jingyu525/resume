@@ -17,7 +17,7 @@ export function App() {
       <ToastProvider>
         <I18nProvider>
           <AutoSaveGate />
-          <BrowserRouter>
+          <BrowserRouter basename="/resume/">
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/editor" element={<EditorPage />} />
