@@ -79,4 +79,11 @@ describe("distributeBlocks (FR-7 分页)", () => {
     const pages = distributeBlocks([head("h", 20, true)], new Map([["h", 20]]), 250);
     expect(pages[0][0].id).toBe("h");
   });
+
+  it("keepWithNext 后继块高度缺失时按 0 计（?? 兜底分支）", () => {
+    const blocks = [head("h", 20, true), item("i", 100)];
+    const heights = new Map([["h", 20]]); // i 不在 heights 中
+    const pages = distributeBlocks(blocks, heights, 250);
+    expect(pages[0].map((b) => b.id)).toEqual(["h", "i"]);
+  });
 });
