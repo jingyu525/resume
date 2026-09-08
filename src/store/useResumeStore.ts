@@ -430,3 +430,23 @@ export function useTemporalStore<T>(
 ): T {
   return useStore(useResumeStore.temporal, selector);
 }
+
+/**
+ * 最后一道防线：章节结构不该为空。
+ *
+ * 结构由系统提供（各章节类型插件），为空说明它没给到——用户面对一片空白，
+ * 且不知道该做什么。这里补种默认章节，让界面回到可用状态。
+ *
+ * 正常流程下不会触发（hydrate 与 migrate 都已保证结构非空），
+ * 保留它是因为「空白」对用户是最无从判断的失败。
+ *
+ * @returns 是否发生了补种
+ */
+export function ensureStructure(): boolean {
+  if (useResumeStore.getState().resume.sections.length > 0) return false;
+  const temporal = useResumeStore.temporal.getState();
+  temporal.pause();
+  useResumeStore.setState({ resume: createEmptyResume() });
+  temporal.resume();
+  return true;
+}

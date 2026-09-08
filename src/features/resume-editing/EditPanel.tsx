@@ -1,5 +1,8 @@
+import { useMemo } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
 import { useI18n } from "@/shared/i18n";
+import { detectEmptiness } from "@/features/empty-state/detect";
+import { EmptyStateNotice } from "@/features/empty-state/EmptyStateNotice";
 import { readBasicField } from "@/shared/lib/basics";
 import type { Locale } from "@/entities/locale";
 import type { BasicInfo, ResumeSection } from "@/entities/resume/model";
@@ -16,8 +19,9 @@ import { Plus, Trash2, ArrowUp, ArrowDown, Eye, EyeOff, GripVertical } from "luc
 export function EditPanel() {
   const { t } = useI18n();
   const locale = useResumeStore((s) => s.locale);
-  const basics = useResumeStore((s) => s.resume.basics);
-  const sections = useResumeStore((s) => s.resume.sections);
+  const resume = useResumeStore((s) => s.resume);
+  const basics = resume.basics;
+  const sections = resume.sections;
   const updateLocalized = useResumeStore((s) => s.updateBasicLocalized);
   const updatePlain = useResumeStore((s) => s.updateBasicPlain);
   const addSection = useResumeStore((s) => s.addSection);
@@ -26,9 +30,12 @@ export function EditPanel() {
   const ordered = [...sections].sort((a, b) => a.order - b.order);
   const drag = useDragReorder((from, to) => reorderSection(ordered[from].id, to));
   const fields = listBasicsFields();
+  // 区分三种「空」：结构空/渲染空报错自愈，事实空给引导，不让用户对着空白发懵
+  const emptiness = useMemo(() => detectEmptiness(resume, locale), [resume, locale]);
 
   return (
     <div className="space-y-6 p-4">
+      <EmptyStateNotice state={emptiness} />
       <section>
         <h3 className="mb-3 text-sm font-semibold">{t("edit.basic")}</h3>
         <div className="grid grid-cols-2 gap-2">

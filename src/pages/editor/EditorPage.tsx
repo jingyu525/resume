@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useI18n } from "@/shared/i18n";
 import { useToast } from "@/shared/ui/toast";
 import { loadError } from "@/store/persistence";
+import { ensureStructure } from "@/store/useResumeStore";
 import { useUndoRedoShortcuts } from "@/features/undo-redo/UndoRedo";
 import { useExitGuard } from "@/features/persistence/useExitGuard";
 import { EditPanel } from "@/features/resume-editing/EditPanel";
@@ -26,10 +27,13 @@ export function EditorPage() {
   const [coach, setCoach] = useState(false);
   // 本地数据读取失败时明确告知：否则"打不开"会被当成"简历被清空"
   const [loadFailed] = useState(() => loadError() !== null);
+  // 结构空是系统故障（章节结构没给到），兜底补种并提示，避免面对一片空白
+  const [structureRepaired] = useState(() => ensureStructure());
 
   useEffect(() => {
     if (loadFailed) toast(t("toast.loadFailed"), "error");
-  }, [loadFailed, toast, t]);
+    if (structureRepaired) toast(t("empty.noSections"), "error");
+  }, [loadFailed, structureRepaired, toast, t]);
 
   return (
     <div className="flex h-screen flex-col">
