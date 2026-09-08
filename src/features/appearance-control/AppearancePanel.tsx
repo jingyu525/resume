@@ -5,14 +5,13 @@ import { cn } from "@/shared/lib/cn";
 import { Slider } from "@/shared/ui/slider";
 import { Button } from "@/shared/ui/button";
 import { RotateCcw } from "lucide-react";
-import { listThemes } from "@/plugins/core/registry";
+import { TemplateGallery } from "./TemplateGallery";
 
 /** 外观四直觉维度：主色 / 版式 / 气质 / 疏密（FR-5），系统将直觉轴翻译为版面数值 */
 export function AppearancePanel() {
   const { t } = useI18n();
   const appearance = useResumeStore((s) => s.appearance);
   const setAppearance = useResumeStore((s) => s.setAppearance);
-  const applyTheme = useResumeStore((s) => s.applyTheme);
   const resetAppearance = useResumeStore((s) => s.resetAppearance);
 
   return (
@@ -26,23 +25,7 @@ export function AppearancePanel() {
       </div>
 
       <Field label={t("theme.title")}>
-        <div className="grid grid-cols-2 gap-2">
-          {listThemes().map((th) => (
-            <button
-              key={th.id}
-              type="button"
-              onClick={() => applyTheme(th.id)}
-              className={cn(
-                "rounded-lg border px-3 py-2 text-sm transition-colors",
-                appearance.theme === th.id
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border hover:bg-secondary",
-              )}
-            >
-              {t(th.labelKey)}
-            </button>
-          ))}
-        </div>
+        <TemplateGallery />
       </Field>
 
       <div className="border-t pt-4">
