@@ -58,7 +58,7 @@ describe("内置插件注册", () => {
     );
   });
 
-  it("章节类型插件按注册顺序暴露，该顺序即空白简历的默认章节顺序", () => {
+  it("章节类型插件按注册顺序暴露，该顺序即「添加章节」菜单顺序（空白简历固定为内置 5 类）", () => {
     expect(listSectionTypes().map((p) => p.sectionKind)).toEqual([
       "summary",
       "experience",

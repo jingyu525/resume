@@ -1,6 +1,7 @@
 import type { Localized, ResumeData, ResumeSection, RichText, SkillGroup } from "@/entities/resume/model";
+import type { SectionTypePlugin } from "@/plugins/core/types";
 import { newId } from "@/shared/lib/id";
-import { listSectionTypes } from "./core/registry";
+import { getSectionType } from "./core/registry";
 
 /**
  * 构造函数：按插件生成空章节（供模板与新增章节复用）。
@@ -31,6 +32,19 @@ export function emptySectionOf(
  * 实现基础——新增语言包后，模板由各插件的 defaultTitle 与 createSample 提供。
  */
 
+/**
+ * 默认简历固定为这 5 个内置章节：其余章节类型（证书 / 语言 / 作品集等）
+ * 由用户在「添加章节」菜单中按需加入，避免空白简历被空章节撑大，
+ * 也避免落地页示例简历出现空的章节标题。
+ */
+const DEFAULT_SECTION_KINDS = ["summary", "experience", "project", "education", "skills"];
+
+function defaultSectionPlugins(): SectionTypePlugin[] {
+  return DEFAULT_SECTION_KINDS.map((k) => getSectionType(k)).filter(
+    (p): p is SectionTypePlugin => Boolean(p),
+  );
+}
+
 /** 空白简历 + 纸面占位引导（FR-4） */
 export function createEmptyResume(): ResumeData {
   return {
@@ -43,7 +57,7 @@ export function createEmptyResume(): ResumeData {
       wechat: "",
       website: "",
     },
-    sections: listSectionTypes().map((plugin, i) =>
+    sections: defaultSectionPlugins().map((plugin, i) =>
       emptySectionOf(plugin.sectionKind, plugin.defaultTitle, i),
     ),
   };
@@ -67,7 +81,7 @@ export function createSampleResume(): ResumeData {
     wechat: "zhixing_pm",
     website: "zhixing.li",
   };
-  base.sections = listSectionTypes().map((plugin, i) => {
+  base.sections = defaultSectionPlugins().map((plugin, i) => {
     const sample = plugin.createSample?.();
     if (!sample) return emptySectionOf(plugin.sectionKind, plugin.defaultTitle, i);
     return { ...sample, order: i };
