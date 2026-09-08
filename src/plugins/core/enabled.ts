@@ -56,3 +56,38 @@ export function allOverrides(): Record<string, boolean> {
 export function resetEnabledCache(): void {
   cache = null;
 }
+
+/**
+ * 首用引导等 UI 偏好（视图态，独立键，不进 resume/appearance/zundo 撤销历史）。
+ *
+ * 与插件开关同属"视图态持久化"职责，因此收口在本模块；统一走独立键 +
+ * 静默降级，符合规则 S3（localStorage 只允许存储插件与插件开关模块直接读写）。
+ */
+const UI_PREF_KEY = "resume-studio:ui-prefs:v1";
+let uiPrefCache: Record<string, boolean> | null = null;
+
+function readUiPrefs(): Record<string, boolean> {
+  if (uiPrefCache) return uiPrefCache;
+  try {
+    const raw = localStorage.getItem(UI_PREF_KEY);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+    uiPrefCache = parsed && typeof parsed === "object" ? (parsed as Record<string, boolean>) : {};
+  } catch {
+    uiPrefCache = {};
+  }
+  return uiPrefCache;
+}
+
+export function getUiPref(key: string): boolean {
+  return readUiPrefs()[key] ?? false;
+}
+
+export function setUiPref(key: string, value: boolean): void {
+  const next = { ...readUiPrefs(), [key]: value };
+  uiPrefCache = next;
+  try {
+    localStorage.setItem(UI_PREF_KEY, JSON.stringify(next));
+  } catch {
+    // 静默：引导偏好不影响编辑
+  }
+}

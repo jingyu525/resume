@@ -6,6 +6,8 @@ import { EditPanel } from "@/features/resume-editing/EditPanel";
 import { AppearancePanel } from "@/features/appearance-control/AppearancePanel";
 import { EditorToolbar } from "@/widgets/editor-toolbar/EditorToolbar";
 import { PreviewPane } from "@/widgets/preview-pane/PreviewPane";
+import { FirstRunGuide } from "@/widgets/first-run/FirstRunGuide";
+import { getUiPref } from "@/plugins/core/enabled";
 import { Tabs } from "@/shared/ui/tabs";
 import { IconButton } from "@/shared/ui/button";
 import { X } from "lucide-react";
@@ -17,6 +19,8 @@ export function EditorPage() {
   const { t } = useI18n();
   const [showAppearance, setShowAppearance] = useState(false);
   const [mobileTab, setMobileTab] = useState<"edit" | "preview">("preview");
+  const [onboarded, setOnboarded] = useState(() => getUiPref("rs_onboarded"));
+  const [coach, setCoach] = useState(false);
 
   return (
     <div className="flex h-screen flex-col">
@@ -28,7 +32,7 @@ export function EditorPage() {
           <EditPanel />
         </aside>
         <div className="min-h-0 flex-1">
-          <PreviewPane />
+          <PreviewPane coach={coach} />
         </div>
       </div>
 
@@ -51,7 +55,7 @@ export function EditorPage() {
               <EditPanel />
             </div>
           ) : (
-            <PreviewPane />
+            <PreviewPane coach={coach} />
           )}
         </div>
       </div>
@@ -70,6 +74,15 @@ export function EditorPage() {
             <AppearancePanel />
           </div>
         </div>
+      )}
+
+      {!onboarded && (
+        <FirstRunGuide
+          onClose={() => {
+            setOnboarded(true);
+            setCoach(true);
+          }}
+        />
       )}
     </div>
   );

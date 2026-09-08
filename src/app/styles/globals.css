@@ -309,8 +309,30 @@ a {
   .no-print {
     display: none !important;
   }
+  /* 首用高亮仅屏幕引导用，上纸时去掉光圈避免误印 */
+  .coach-highlight {
+    box-shadow: none !important;
+    animation: none !important;
+    border-radius: 0 !important;
+  }
   /* 未填写的联系方式在屏幕上是灰色占位引导，上纸时必须收掉，否则打印出"电话/邮箱"空壳 */
   .rs-contact .rs-empty {
     display: none;
+  }
+}
+
+/* 首用引导：预览区首段可编辑文字的一次性高亮，指向"点字即改" */
+.coach-highlight {
+  border-radius: 4px;
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.5);
+  animation: coach-pulse 1.1s ease-in-out 3;
+}
+@keyframes coach-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 7px hsl(var(--primary) / 0.12);
   }
 }

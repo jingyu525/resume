@@ -6,7 +6,7 @@ import { PaginatedResume } from "@/features/pagination/PaginatedResume";
 const PAGE_W_PX = (210 * 96) / 25.4;
 
 /** 右侧 A4 实时预览：自动缩放保证整页可见，实时显示总页数（FR-7） */
-export function PreviewPane() {
+export function PreviewPane({ coach = false }: { coach?: boolean }) {
   const { t } = useI18n();
   const resume = useResumeStore((s) => s.resume);
   const locale = useResumeStore((s) => s.locale);
@@ -17,6 +17,19 @@ export function PreviewPane() {
   const [scale, setScale] = useState(0.68);
   const [box, setBox] = useState({ w: PAGE_W_PX, h: 0 });
   const [pages, setPages] = useState(1);
+
+  // 首用序列关闭后，给首段可编辑文字一次性高亮，把"点字即改"落到真实文字上
+  useEffect(() => {
+    if (!coach) return;
+    const id = window.setTimeout(() => {
+      const els = Array.from(document.querySelectorAll<HTMLElement>(".rs-editable"));
+      const target = els.find((el) => el.getBoundingClientRect().width > 0) ?? els[0];
+      if (!target) return;
+      target.classList.add("coach-highlight");
+      window.setTimeout(() => target.classList.remove("coach-highlight"), 3800);
+    }, 450);
+    return () => window.clearTimeout(id);
+  }, [coach]);
 
   useEffect(() => {
     const wrap = wrapRef.current;
