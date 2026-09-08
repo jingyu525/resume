@@ -11,6 +11,9 @@ set -uo pipefail
 
 cd "$(dirname "$0")/.."
 
+# LandingPage 展示区已接入五语（数据驱动样例简历），I1 硬编码中文检查转为强阻断
+export I18N_BLOCKING=1
+
 fails=0
 
 echo "──── 规则校验 ────"

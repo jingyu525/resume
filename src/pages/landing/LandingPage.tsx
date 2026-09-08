@@ -5,6 +5,10 @@ import { LanguageSwitcher } from "@/features/language-switch/LanguageSwitcher";
 import { DEFAULT_APPEARANCE } from "@/entities/appearance/model";
 import { resolveResumeTheme } from "@/shared/config/presets";
 import { getTheme } from "@/plugins/core/registry";
+import { useMemo } from "react";
+import { createSampleResume } from "@/plugins/resume-template";
+import { localizedText } from "@/shared/lib/localized";
+import { richTextToPlain } from "@/shared/lib/sanitize";
 import { Github, FileText, Type, Bot, Code2, HardDrive, Lock } from "lucide-react";
 import { LandingHero } from "@/widgets/landing-hero/LandingHero";
 import { LandingFeatures } from "@/widgets/landing-features/LandingFeatures";
@@ -23,9 +27,28 @@ const ENGINEERING = [
 ];
 
 export function LandingPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const themePlugin = getTheme(DEFAULT_APPEARANCE.theme);
   const theme = { ...resolveResumeTheme(DEFAULT_APPEARANCE), ...(themePlugin?.cssVars ?? {}) };
+
+  // 展示区直接驱动自样例简历（与「试用」取得的数据一致），随界面语言切换，无硬编码中文
+  const sample = useMemo(() => createSampleResume(), []);
+  const exp = sample.sections.find((s) => s.kind === "experience");
+  const skills = sample.sections.find((s) => s.kind === "skills");
+  const expItem = exp?.items[0];
+  const name = localizedText(sample.basics.name, locale);
+  const job = localizedText(sample.basics.title, locale);
+  const city = localizedText(sample.basics.city, locale);
+  const contact = [city, sample.basics.email].filter(Boolean).join(" · ");
+  const expTitle = expItem ? localizedText(expItem.title, locale) : "";
+  const expSub = expItem ? localizedText(expItem.subtitle, locale) : "";
+  const expDate = expItem
+    ? [expItem.startDate.slice(0, 4), expItem.current ? t("edit.current") : expItem.endDate.slice(0, 4)]
+        .filter(Boolean)
+        .join(" – ")
+    : "";
+  const expDesc = expItem ? richTextToPlain(localizedText(expItem.description, locale) ?? "") : "";
+  const skillGroups = skills?.groups ?? [];
 
   return (
     <div className="min-h-screen">
@@ -81,7 +104,7 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* 编辑器展示区 */}
+        {/* 编辑器展示区：样例简历（随界面语言切换，与「试用」取得的数据一致） */}
         <section className="mx-auto max-w-6xl px-6 py-12">
           <h2 className="mb-8 text-center text-3xl font-bold tracking-tight">{t("showcase.title")}</h2>
           <div className="flex justify-center">
@@ -90,33 +113,41 @@ export function LandingPage() {
                 className="a4-page rs-doc"
                 style={{ ...(theme as React.CSSProperties), width: "180mm", transform: "scale(1)" }}
               >
-                <div className="rs-name">李知行</div>
-                <div className="rs-jobtitle">高级产品经理</div>
+                <div className="rs-name">{name}</div>
+                <div className="rs-jobtitle">{job}</div>
                 <div className="rs-contact">
-                  <span>shanghai · zhixing.li@example.com</span>
+                  <span>{contact}</span>
                 </div>
-                <div className="rs-section">
-                  <div className="rs-section-title">工作经历</div>
-                  <div className="rs-item">
-                    <div className="rs-item-head">
-                      <div>
-                        <div className="rs-item-title">星河科技</div>
-                        <div className="rs-item-sub">高级产品经理</div>
+                {exp && (
+                  <div className="rs-section">
+                    <div className="rs-section-title">{localizedText(exp.title, locale)}</div>
+                    {expItem && (
+                      <div className="rs-item">
+                        <div className="rs-item-head">
+                          <div>
+                            <div className="rs-item-title">{expTitle}</div>
+                            <div className="rs-item-sub">{expSub}</div>
+                          </div>
+                          <div className="rs-item-date">{expDate}</div>
+                        </div>
+                        <div className="rs-desc">{expDesc}</div>
                       </div>
-                      <div className="rs-item-date">2021 – 至今</div>
-                    </div>
-                    <div className="rs-desc">
-                      <p>主导企业协作平台核心模块，推动<em className="rs-em">自动化工作流</em>上线。</p>
-                    </div>
+                    )}
                   </div>
-                </div>
-                <div className="rs-section">
-                  <div className="rs-section-title">专业技能</div>
-                  <div className="rs-skill-group">
-                    <div className="rs-skill-name">产品方法</div>
-                    <div className="rs-skill-items">用户研究 · 路线图规划 · A/B 实验</div>
+                )}
+                {skills && (
+                  <div className="rs-section">
+                    <div className="rs-section-title">{localizedText(skills.title, locale)}</div>
+                    {skillGroups.map((g) => (
+                      <div className="rs-skill-group" key={g.id}>
+                        <div className="rs-skill-name">{localizedText(g.name, locale)}</div>
+                        <div className="rs-skill-items">
+                          {localizedText(g.items, locale).split("\n").join(" · ")}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
