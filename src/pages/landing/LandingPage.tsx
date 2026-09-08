@@ -3,13 +3,13 @@ import { useI18n } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { LanguageSwitcher } from "@/features/language-switch/LanguageSwitcher";
 import { DEFAULT_APPEARANCE } from "@/entities/appearance/model";
-import { resolveResumeTheme } from "@/shared/config/presets";
-import { getTheme } from "@/plugins/core/registry";
 import { useMemo } from "react";
 import { createSampleResume } from "@/plugins/resume-template";
-import { localizedText } from "@/shared/lib/localized";
-import { richTextToPlain } from "@/shared/lib/sanitize";
+import { PaginatedResume } from "@/features/pagination/PaginatedResume";
 import { Github, FileText, Type, Bot, Code2, HardDrive, Lock } from "lucide-react";
+
+// 落地页展示区缩放系数（A4 在 hero 区按此比例缩小）
+const SHOWCASE_SCALE = 0.6;
 import { LandingHero } from "@/widgets/landing-hero/LandingHero";
 import { LandingFeatures } from "@/widgets/landing-features/LandingFeatures";
 import { LandingFooter } from "@/widgets/landing-footer/LandingFooter";
@@ -32,27 +32,11 @@ const ENGINEERING = [
 export function LandingPage() {
   const { t, locale } = useI18n();
   const navigate = useNavigate();
-  const themePlugin = getTheme(DEFAULT_APPEARANCE.theme);
-  const theme = { ...resolveResumeTheme(DEFAULT_APPEARANCE), ...(themePlugin?.cssVars ?? {}) };
 
-  // 展示区直接驱动自样例简历（与「试用」取得的数据一致），随界面语言切换，无硬编码中文
+  // 展示区用真实渲染管线（PaginatedResume）渲染样例简历，随界面语言切换；
+  // 卡片只读 + 点击进入真实编辑器。原因：就地编辑会改动全局 store，而自动保存是全局的，
+  // 会覆盖回访者的已存简历，故落地页只做「真实预览 + 一点即进编辑器」。
   const sample = useMemo(() => createSampleResume(), []);
-  const exp = sample.sections.find((s) => s.kind === "experience");
-  const skills = sample.sections.find((s) => s.kind === "skills");
-  const expItem = exp?.items[0];
-  const name = localizedText(sample.basics.name, locale);
-  const job = localizedText(sample.basics.title, locale);
-  const city = localizedText(sample.basics.city, locale);
-  const contact = [city, sample.basics.email].filter(Boolean).join(" · ");
-  const expTitle = expItem ? localizedText(expItem.title, locale) : "";
-  const expSub = expItem ? localizedText(expItem.subtitle, locale) : "";
-  const expDate = expItem
-    ? [expItem.startDate.slice(0, 4), expItem.current ? t("edit.current") : expItem.endDate.slice(0, 4)]
-        .filter(Boolean)
-        .join(" – ")
-    : "";
-  const expDesc = expItem ? richTextToPlain(localizedText(expItem.description, locale) ?? "") : "";
-  const skillGroups = skills?.groups ?? [];
 
   return (
     <div className="min-h-screen">
@@ -110,50 +94,39 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* 编辑器展示区：样例简历（随界面语言切换，与「试用」取得的数据一致） */}
+        {/* 编辑器展示区：真实渲染管线渲染的样例简历（随界面语言切换），
+            只读 + 点击进入真实编辑器，制造「点一下就懂」 */}
         <section className="mx-auto max-w-6xl px-6 py-12">
           <h2 className="mb-8 text-center text-3xl font-bold tracking-tight">{t("showcase.title")}</h2>
           <div className="flex justify-center">
-            <div className="rotate-1 rounded-lg bg-white p-2 shadow-2xl ring-1 ring-border">
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => navigate("/editor")}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  navigate("/editor");
+                }
+              }}
+              className="group relative rotate-1 cursor-pointer rounded-lg bg-white p-2 shadow-2xl ring-1 ring-border transition-transform hover:-translate-y-1"
+            >
+              <span className="no-print pointer-events-none absolute -top-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+                {t("nav.try")}
+              </span>
               <div
-                className="a4-page rs-doc"
-                style={{ ...(theme as React.CSSProperties), width: "180mm", transform: "scale(1)" }}
+                className="overflow-hidden rounded-sm"
+                style={{ width: `${210 * SHOWCASE_SCALE}mm`, height: `${297 * SHOWCASE_SCALE}mm` }}
               >
-                <div className="rs-name">{name}</div>
-                <div className="rs-jobtitle">{job}</div>
-                <div className="rs-contact">
-                  <span>{contact}</span>
+                <div
+                  style={{
+                    transform: `scale(${SHOWCASE_SCALE})`,
+                    transformOrigin: "top left",
+                    pointerEvents: "none",
+                  }}
+                >
+                  <PaginatedResume resume={sample} locale={locale} appearance={DEFAULT_APPEARANCE} />
                 </div>
-                {exp && (
-                  <div className="rs-section">
-                    <div className="rs-section-title">{localizedText(exp.title, locale)}</div>
-                    {expItem && (
-                      <div className="rs-item">
-                        <div className="rs-item-head">
-                          <div>
-                            <div className="rs-item-title">{expTitle}</div>
-                            <div className="rs-item-sub">{expSub}</div>
-                          </div>
-                          <div className="rs-item-date">{expDate}</div>
-                        </div>
-                        <div className="rs-desc">{expDesc}</div>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {skills && (
-                  <div className="rs-section">
-                    <div className="rs-section-title">{localizedText(skills.title, locale)}</div>
-                    {skillGroups.map((g) => (
-                      <div className="rs-skill-group" key={g.id}>
-                        <div className="rs-skill-name">{localizedText(g.name, locale)}</div>
-                        <div className="rs-skill-items">
-                          {localizedText(g.items, locale).split("\n").join(" · ")}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           </div>
