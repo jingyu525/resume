@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://jingyu525.github.io/resume/sitemap.xml
