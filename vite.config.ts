@@ -16,6 +16,17 @@ export default defineConfig({
     host: "0.0.0.0",
     allowedHosts: true,
   },
+  build: {
+    // 生产优化：vendor 长期缓存 + 首屏并行下载
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "react-vendor": ["react", "react-dom", "react-router-dom"],
+          icons: ["lucide-react"],
+        },
+      },
+    },
+  },
   test: {
     environment: "jsdom",
     globals: true,
