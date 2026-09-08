@@ -260,10 +260,35 @@ a {
   display: none;
 }
 
+/* 常驻打印副本（方案 A）：屏幕外渲染以便分页测量，不参与屏幕布局、不产生滚动条 */
+.rs-print-source {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  /* 不限制尺寸、不 overflow:hidden，确保内部分页测量正常 */
+}
+
 @media print {
   @page {
     size: A4;
     margin: 0;
+  }
+  /*
+   * 方案 A：只输出常驻打印副本，隐藏全部屏幕 UI（含屏幕预览的 print-area）。
+   * 避免移动端 tab 切换导致打印区缺失、以及双份 print-area 重复打印。
+   */
+  .app-shell {
+    display: none !important;
+  }
+  .rs-print-source {
+    display: block !important;
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: auto !important;
+    height: auto !important;
+    visibility: visible !important;
+    overflow: visible !important;
   }
   /*
    * 隐藏全部内容，再单独放行打印区。

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 
 import { useI18n } from "@/shared/i18n";
 import { useToast } from "@/shared/ui/toast";
 import { loadError } from "@/store/persistence";
-import { ensureStructure } from "@/store/useResumeStore";
+import { ensureStructure, useResumeStore } from "@/store/useResumeStore";
 import { useUndoRedoShortcuts } from "@/features/undo-redo/UndoRedo";
 import { useExitGuard } from "@/features/persistence/useExitGuard";
 import { EditPanel } from "@/features/resume-editing/EditPanel";
@@ -10,6 +10,7 @@ import { AppearancePanel } from "@/features/appearance-control/AppearancePanel";
 import { EditorToolbar } from "@/widgets/editor-toolbar/EditorToolbar";
 import { PreviewPane } from "@/widgets/preview-pane/PreviewPane";
 import { FirstRunGuide } from "@/widgets/first-run/FirstRunGuide";
+import { PaginatedResume } from "@/features/pagination/PaginatedResume";
 import { getUiPref, getUiPrefNumber, setUiPrefNumber } from "@/plugins/core/enabled";
 import { Tabs } from "@/shared/ui/tabs";
 import { IconButton } from "@/shared/ui/button";
@@ -73,6 +74,10 @@ export function EditorPage() {
   const [mobileTab, setMobileTab] = useState<"edit" | "preview">("preview");
   const [onboarded, setOnboarded] = useState(() => getUiPref("rs_onboarded"));
   const [coach, setCoach] = useState(false);
+  // 常驻打印副本所需数据（与预览同源，保证导出内容与屏幕一致）
+  const resume = useResumeStore((s) => s.resume);
+  const locale = useResumeStore((s) => s.locale);
+  const appearance = useResumeStore((s) => s.appearance);
   // 本地数据读取失败时明确告知：否则"打不开"会被当成"简历被清空"
   const [loadFailed] = useState(() => loadError() !== null);
   // 结构空是系统故障（章节结构没给到），兜底补种并提示，避免面对一片空白
@@ -84,78 +89,90 @@ export function EditorPage() {
   }, [loadFailed, structureRepaired, toast, t]);
 
   return (
-    <div className="flex h-screen flex-col">
-      <EditorToolbar onToggleAppearance={() => setShowAppearance((v) => !v)} />
+    <>
+      <div className="app-shell flex h-screen flex-col">
+        <EditorToolbar onToggleAppearance={() => setShowAppearance((v) => !v)} />
 
-      {/* 桌面：双栏 + 可拖拽分隔条 */}
-      <div ref={containerRef} className="hidden min-h-0 flex-1 md:flex">
-        <aside style={{ width: editorWidth }} className="shrink-0 overflow-auto border-r border-border">
-          <EditPanel />
-        </aside>
-        <div
-          role="separator"
-          aria-orientation="vertical"
-          aria-label={t("editor.resizeHandle")}
-          title={t("editor.resizeHandle")}
-          onMouseDown={startDrag}
-          onDoubleClick={resetWidth}
-          className="group relative w-1.5 shrink-0 cursor-col-resize bg-transparent transition-colors hover:bg-border/50"
-        >
-          <div className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-border group-hover:bg-primary/60" />
-        </div>
-        <div className="min-h-0 flex-1">
-          <PreviewPane coach={coach} />
-        </div>
-      </div>
-
-      {/* 移动端：底部 Tab */}
-      <div className="flex min-h-0 flex-1 flex-col md:hidden">
-        <div className="border-b border-border p-2">
-          <Tabs
-            value={mobileTab}
-            onChange={setMobileTab}
-            options={[
-              { value: "edit", label: t("editor.edit") },
-              { value: "preview", label: t("editor.preview") },
-            ]}
-            className="w-full justify-center"
-          />
-        </div>
-        <div className="min-h-0 flex-1">
-          {mobileTab === "edit" ? (
-            <div className="h-full overflow-auto">
-              <EditPanel />
-            </div>
-          ) : (
+        {/* 桌面：双栏 + 可拖拽分隔条 */}
+        <div ref={containerRef} className="hidden min-h-0 flex-1 md:flex">
+          <aside style={{ width: editorWidth }} className="shrink-0 overflow-auto border-r border-border">
+            <EditPanel />
+          </aside>
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label={t("editor.resizeHandle")}
+            title={t("editor.resizeHandle")}
+            onMouseDown={startDrag}
+            onDoubleClick={resetWidth}
+            className="group relative w-1.5 shrink-0 cursor-col-resize bg-transparent transition-colors hover:bg-border/50"
+          >
+            <div className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-border group-hover:bg-primary/60" />
+          </div>
+          <div className="min-h-0 flex-1">
             <PreviewPane coach={coach} />
-          )}
-        </div>
-      </div>
-
-      {/* 外观抽屉 */}
-      {showAppearance && (
-        <div className="fixed inset-0 z-50 flex justify-end no-print">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setShowAppearance(false)} />
-          <div className="relative h-full w-80 max-w-[88vw] overflow-auto border-l border-border bg-background shadow-xl">
-            <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
-              <span className="text-sm font-semibold">{t("appearance.title")}</span>
-              <IconButton label={t("common.close")} onClick={() => setShowAppearance(false)}>
-                <X size={16} />
-              </IconButton>
-            </div>
-            <AppearancePanel />
           </div>
         </div>
-      )}
 
-      {!onboarded && (
-        <FirstRunGuide
-          onClose={() => {
-            setOnboarded(true);
-            setCoach(true);
-          }}
-        />
-      )}
-    </div>
+        {/* 移动端：底部 Tab */}
+        <div className="flex min-h-0 flex-1 flex-col md:hidden">
+          <div className="border-b border-border p-2">
+            <Tabs
+              value={mobileTab}
+              onChange={setMobileTab}
+              options={[
+                { value: "edit", label: t("editor.edit") },
+                { value: "preview", label: t("editor.preview") },
+              ]}
+              className="w-full justify-center"
+            />
+          </div>
+          <div className="min-h-0 flex-1">
+            {mobileTab === "edit" ? (
+              <div className="h-full overflow-auto">
+                <EditPanel />
+              </div>
+            ) : (
+              <PreviewPane coach={coach} />
+            )}
+          </div>
+        </div>
+
+        {/* 外观抽屉 */}
+        {showAppearance && (
+          <div className="fixed inset-0 z-50 flex justify-end no-print">
+            <div className="absolute inset-0 bg-black/30" onClick={() => setShowAppearance(false)} />
+            <div className="relative h-full w-80 max-w-[88vw] overflow-auto border-l border-border bg-background shadow-xl">
+              <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
+                <span className="text-sm font-semibold">{t("appearance.title")}</span>
+                <IconButton label={t("common.close")} onClick={() => setShowAppearance(false)}>
+                  <X size={16} />
+                </IconButton>
+              </div>
+              <AppearancePanel />
+            </div>
+          </div>
+        )}
+
+        {!onboarded && (
+          <FirstRunGuide
+            onClose={() => {
+              setOnboarded(true);
+              setCoach(true);
+            }}
+          />
+        )}
+      </div>
+
+      {/*
+        常驻打印副本（方案 A）：脱离屏幕布局，移动端（编辑/预览 tab 切换）与桌面端
+        统一以它为打印 / 导出源。屏幕外 fixed 定位并保留尺寸，保证内部分页测量正常；
+        打印时由 globals.css 的 @media print 规则把它还原为正常文档流并只输出它。
+        只读（不传 editors），与预览共享同一份 store，内容始终一致。
+      */}
+      <div className="rs-print-source" aria-hidden="true">
+        <PaginatedResume resume={resume} locale={locale} appearance={appearance} />
+      </div>
+    </>
   );
 }

@@ -20,6 +20,8 @@ export interface PaginatedResumeProps {
   onTotalPages?: (n: number) => void;
   /** 编辑回调：传入即就地可编辑（编辑器）；不传则整页只读（落地页示例） */
   editors?: BlockEditors;
+  /** 是否作为导出源（带 print-area 类，供「导出 PDF 文件」逐页截图）。屏幕预览传 false，常驻导出副本传 true（默认） */
+  printSource?: boolean;
 }
 
 export function PaginatedResume({
@@ -28,6 +30,7 @@ export function PaginatedResume({
   appearance,
   onTotalPages,
   editors,
+  printSource = true,
 }: PaginatedResumeProps) {
   const { t } = useI18n();
   // 主题插件贡献的 CSS 变量合并进简历根节点（M6：主题可插件安装）
@@ -128,7 +131,7 @@ export function PaginatedResume({
 
       {/* 可见页 */}
       {pages.map((pg, idx) => (
-        <div key={idx} className="a4-page rs-doc rs-page print-area" style={pageStyle}>
+        <div key={idx} className={`a4-page rs-doc rs-page${printSource ? " print-area" : ""}`} style={pageStyle}>
           {appearance.layout === "sidebar" ? (
             <div style={{ display: "flex", gap: `${GAP_MM}mm` }}>
               <div

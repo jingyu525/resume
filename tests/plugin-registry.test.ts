@@ -47,7 +47,7 @@ describe("内置插件注册", () => {
       "wechat",
       "website",
     ]);
-    expect(getDefaultExporter()?.id).toBe("pdf-print");
+    expect(getDefaultExporter()?.id).toBe("pdf-generate");
     expect(getActiveStorage()?.id).toBe("storage-local");
   });
 
@@ -101,7 +101,7 @@ describe("内置插件注册", () => {
   it("默认导出唯一（规则 C7），且注册表含示范 Markdown 导出器（M4 导出器可插拔）", () => {
     const defaults = listExporters().filter((p) => p.default);
     expect(defaults.length).toBe(1);
-    expect(defaults[0].id).toBe("pdf-print");
+    expect(defaults[0].id).toBe("pdf-generate");
     expect(listExporters().map((p) => p.id)).toContain("markdown");
   });
 
@@ -126,7 +126,7 @@ describe("内置插件注册", () => {
 
   it("重复注册同一 kind+id 会抛错（避免静默覆盖）", () => {
     const duplicate: ExporterPlugin = {
-      id: "pdf-print",
+      id: "pdf-generate",
       kind: "exporter",
       labelKey: "editor.print",
       version: 1,

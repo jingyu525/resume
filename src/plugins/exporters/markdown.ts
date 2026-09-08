@@ -8,7 +8,7 @@ import { richTextToPlain } from "@/shared/lib/sanitize";
  * 示范导出器：简历导出为 Markdown（.md）。
  *
  * 证明「导出器可插件安装」：无第三方依赖、纯前端生成并下载，与默认的
- * `window.print()` 导出 PDF 走同一套 ExporterPlugin 契约（M4）。
+ * 「导出 PDF 文件」(pdf-generate) 走同一套 ExporterPlugin 契约（M4）。
  * 真实业务里若要导出 Word（.docx）或图片，照此契约再写一个插件、拉对应库即可，
  * 无需改动基类或 UI。
  */
@@ -81,7 +81,7 @@ export const markdownExporter: ExporterPlugin = {
   kind: "exporter",
   labelKey: "export.markdown",
   version: 1,
-  // 非默认：默认导出仍是打印 PDF（pdf-print.default = true）
+  // 非默认：默认导出为「导出 PDF 文件」(pdf-generate.default = true)
   run({ resume, locale }) {
     const name = localizedText(resume.basics.name, locale) || "resume";
     download(`${name}.md`, buildMarkdown(resume, locale));

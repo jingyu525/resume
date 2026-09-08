@@ -65,6 +65,7 @@ export function PreviewPane({ coach = false }: { coach?: boolean }) {
               appearance={appearance}
               onTotalPages={setPages}
               editors={{ updateBasicLocalized, updateBasicPlain, renameSection }}
+              printSource={false}
             />
           </div>
         </div>

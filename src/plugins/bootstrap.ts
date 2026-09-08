@@ -11,9 +11,8 @@ import { emailField } from "./basics-fields/email";
 import { cityField } from "./basics-fields/city";
 import { wechatField } from "./basics-fields/wechat";
 import { websiteField } from "./basics-fields/website";
-import { pdfPrintExporter } from "./exporters/pdf-print";
 import { markdownExporter } from "./exporters/markdown";
-import { pdfDownloadExporter } from "./exporters/pdf-download";
+import { pdfGenerateExporter } from "./exporters/pdf-generate";
 import { localStoragePlugin } from "./storage/local";
 import { summarySection } from "./section-types/summary";
 import { experienceSection } from "./section-types/experience";
@@ -68,10 +67,9 @@ export const BUILTIN_PLUGINS: Plugin[] = [
   cityField,
   wechatField,
   websiteField,
-  // 导出：打印为默认；Markdown / 直接下载 PDF 为 M4 示范导出器（证明导出器可插件安装）
-  pdfPrintExporter,
+  // 导出：默认「导出 PDF 文件」(pdf-generate)；Markdown 为 M4 示范导出器（证明导出器可插件安装）
   markdownExporter,
-  pdfDownloadExporter,
+  pdfGenerateExporter,
   // 存储：本地优先定位下只内置本地存储。
   // 不内置任何远程存储插件：它既不是当前需求，也与"数据只留浏览器"的承诺直接冲突
   localStoragePlugin,
