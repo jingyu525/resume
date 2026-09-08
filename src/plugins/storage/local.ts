@@ -37,8 +37,11 @@ export const localStoragePlugin: StoragePlugin = {
   async save(state: PersistedState) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      return true;
     } catch {
-      // 配额溢出等：静默失败，不阻塞编辑
+      // 配额溢出 / 隐私模式：如实返回失败，由调用方提示用户。
+      // 绝不静默成功——那会让用户以为已保存，实际内容没落盘。
+      return false;
     }
   },
 

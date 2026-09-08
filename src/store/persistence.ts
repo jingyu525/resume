@@ -72,11 +72,21 @@ export function importPersisted(raw: unknown): { resume: ResumeData; appearance:
   return { resume: migrated.resume, appearance: migrated.appearance };
 }
 
-/** 写入当前启用的存储插件（由调用方防抖，NFR-2：与历史解耦） */
-export async function savePersisted(state: PersistedState): Promise<void> {
+/**
+ * 写入当前启用的存储插件（由调用方防抖，NFR-2：与历史解耦）。
+ *
+ * @returns 是否真的写盘成功。失败必须如实返回：
+ * 调用方据此保留「未保存」标记，退出拦截才能继续兜住未落盘的内容。
+ */
+export async function savePersisted(state: PersistedState): Promise<boolean> {
   const storage = getActiveStorage();
-  if (!storage) return;
-  await storage.save(state);
+  // 没有可用存储 = 没存上，不能当成成功
+  if (!storage) return false;
+  try {
+    return await storage.save(state);
+  } catch {
+    return false;
+  }
 }
 
 export { STORAGE_VERSION };

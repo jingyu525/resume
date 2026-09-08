@@ -126,7 +126,13 @@ export interface StoragePlugin extends PluginBase {
    * 远程存储（M5）只能走异步 load + hydrate，不能卡住首屏。
    */
   loadSync?(): PersistedState | null;
-  save(state: PersistedState): Promise<void>;
+  /**
+   * 写盘。**返回是否成功**，绝不吞掉失败。
+   *
+   * 静默失败等于骗人：调用方会认为已保存并清除「未保存」标记，
+   * 退出拦截随之失效，用户直到下次打开才发现内容没了。
+   */
+  save(state: PersistedState): Promise<boolean>;
   clear(): Promise<void>;
   /** 引导用户配置（如填写仓库与 token） */
   configure?(): Promise<void>;
