@@ -261,17 +261,50 @@ a {
     size: A4;
     margin: 0;
   }
+  /*
+   * 隐藏全部内容，再单独放行打印区。
+   * 同时解除屏幕布局的变换/限高/裁剪：预览区是"缩放 + 滚动容器"，
+   * 不解除的话多页会被裁到只剩可见的第一页。
+   */
   body * {
     visibility: hidden;
+    transform: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
   }
   .print-area,
   .print-area * {
     visibility: visible;
   }
+  /*
+   * 关键：打印区必须留在正常文档流里逐页输出。
+   * 若用 absolute + inset:0，多页会全部叠在左上角，打印/另存 PDF 只剩 1 页（FR-8）。
+   */
   .print-area {
-    position: absolute;
-    inset: 0;
-    margin: 0;
+    position: static !important;
+    inset: auto !important;
+    margin: 0 !important;
+  }
+  /* 预览区的自动缩放与固定高在纸上必须失效，否则尺寸不是 A4、内容被裁 */
+  html,
+  body,
+  #root {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  /* 测量层是 absolute 定位的隐藏层，留着会多打空白页 */
+  .rs-paginated > [aria-hidden="true"] {
+    display: none !important;
+  }
+  /* 一页一纸；最后一页后面不加空白页 */
+  .a4-page.print-area {
+    break-after: page;
+    page-break-after: always;
+  }
+  .a4-page.print-area:last-of-type {
+    break-after: auto;
+    page-break-after: auto;
   }
   .no-print {
     display: none !important;

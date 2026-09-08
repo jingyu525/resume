@@ -101,13 +101,11 @@ function mapSection(
   };
 }
 
-const initial = loadPersisted();
-
 export const useResumeStore = create<ResumeState>()(
   temporal(
     (set) => ({
-      resume: initial?.resume ?? createEmptyResume(),
-      appearance: initial?.appearance ?? { ...DEFAULT_APPEARANCE },
+      resume: createEmptyResume(),
+      appearance: { ...DEFAULT_APPEARANCE },
       locale: DEFAULT_LOCALE,
 
       setLocale: (locale) => set({ locale }),
@@ -306,12 +304,21 @@ export const useResumeStore = create<ResumeState>()(
       // 仅当 resume/appearance 引用变化才入栈；界面语言等视图态不记录
       equality: (a, b) => a.resume === b.resume && a.appearance === b.appearance,
       limit: 100,
-      // 连续同类微小变更（如连续打字）合并为一步：防抖 400ms 后入栈
+      // 连续同类微小变更（如连续打字）合并为一步：防抖 400ms 后入栈。
+      // 关键：合并窗口内只保留"第一次变更前的状态"作为快照，
+      // 否则每次击键覆盖上次快照，撤销时会一个字符一个字符地回退（用户体验上等于没合并）。
       handleSet: (handleSet) => {
+        type Snapshot = Parameters<typeof handleSet>[0];
         let timeout: ReturnType<typeof setTimeout> | undefined;
+        let first: Snapshot | null = null;
         return (state) => {
+          if (first === null) first = state;
           if (timeout) clearTimeout(timeout);
-          timeout = setTimeout(() => handleSet(state), 400);
+          timeout = setTimeout(() => {
+            if (first !== null) handleSet(first);
+            first = null;
+            timeout = undefined;
+          }, 400);
         };
       },
     },
@@ -319,6 +326,26 @@ export const useResumeStore = create<ResumeState>()(
 );
 
 // 默认章节标题表已删除：唯一真源是各章节类型插件的 defaultTitle（此前两份表 ja/de/ko 还不一致）
+
+/**
+ * 从本地存储恢复（FR-9）。**必须在 bootstrapPlugins() 之后调用**（见 app/bootstrap.ts）。
+ *
+ * 之所以不能放模块顶层：章节类型插件会 import 本模块（parts.tsx 要用 store action 渲染编辑器），
+ * 而 `plugins/bootstrap.ts` 里 section 插件排在 storage 插件之前求值 —— 顶层读取时注册表是空的，
+ * getActiveStorage() 返回 undefined，本地数据被静默丢弃，表现为"刷新后简历没了"。
+ * 恢复改为显式调用后，时序由 main.tsx 保证，与插件注册顺序解耦。
+ */
+export function hydrateFromPersisted(): boolean {
+  const persisted = loadPersisted();
+  if (!persisted) return false;
+  // 用 pause/resume 包住：恢复不是一次编辑，不该进撤销历史
+  //（否则用户第一次按撤销就会把刚恢复的简历清空）
+  const temporal = useResumeStore.temporal.getState();
+  temporal.pause();
+  useResumeStore.setState({ resume: persisted.resume, appearance: persisted.appearance });
+  temporal.resume();
+  return true;
+}
 
 /** 访问 zundo 时间旅行状态（撤销/重做），供 React 组件订阅 */
 export function useTemporalStore<T>(

@@ -4,10 +4,13 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "@/app/styles/globals.css";
 import { App } from "@/app/App";
-import { useResumeStore } from "@/store/useResumeStore";
+import { useResumeStore, hydrateFromPersisted } from "@/store/useResumeStore";
 import { hydrateFromStorage } from "@/store/persistence";
 
-// 远程存储插件（M5）无法同步读取，启动后异步回填一次；本地插件会直接跳过。
+// 本地存储恢复：必须在插件注册之后（第一个 import 已保证），详见 hydrateFromPersisted 注释
+hydrateFromPersisted();
+
+// 异步存储插件（无 loadSync）启动后回填一次；本地插件会直接跳过。
 void hydrateFromStorage((resume, appearance) =>
   useResumeStore.getState().loadState(resume, appearance),
 );

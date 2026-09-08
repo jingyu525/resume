@@ -45,4 +45,18 @@ describe("撤销/重做合并步（FR-10）", () => {
     useResumeStore.temporal.getState().undo();
     expect(useResumeStore.getState().resume.basics.website).toBe("");
   });
+
+  it("合并窗口内一次撤销回到整段输入前（而非逐字符回退）", () => {
+    // 先落定一个独立步骤 "X"（关闭合并窗口）
+    useResumeStore.getState().updateBasicPlain("phone", "X");
+    vi.advanceTimersByTime(500);
+    // 紧接着一段连续输入，应被合并为一步
+    useResumeStore.getState().updateBasicPlain("phone", "X1");
+    useResumeStore.getState().updateBasicPlain("phone", "X12");
+    useResumeStore.getState().updateBasicPlain("phone", "X123");
+    vi.advanceTimersByTime(500);
+    useResumeStore.temporal.getState().undo();
+    // 一步回到整段之前，而不是回退一个字符
+    expect(useResumeStore.getState().resume.basics.phone).toBe("X");
+  });
 });

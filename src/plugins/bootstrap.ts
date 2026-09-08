@@ -14,7 +14,6 @@ import { websiteField } from "./basics-fields/website";
 import { pdfPrintExporter } from "./exporters/pdf-print";
 import { markdownExporter } from "./exporters/markdown";
 import { localStoragePlugin } from "./storage/local";
-import { remoteStorageDemo } from "./storage/remote-demo";
 import { summarySection } from "./section-types/summary";
 import { experienceSection } from "./section-types/experience";
 import { projectSection } from "./section-types/project";
@@ -65,9 +64,9 @@ export const BUILTIN_PLUGINS: Plugin[] = [
   // 导出：打印为默认；Markdown 为 M4 示范导出器（证明导出器可插件安装）
   pdfPrintExporter,
   markdownExporter,
-  // 存储：本地为默认；远程实现（M5 示范插件）默认禁用，需配置 token
+  // 存储：本地优先定位下只内置本地存储。
+  // 不内置任何远程存储插件：它既不是当前需求，也与"数据只留浏览器"的承诺直接冲突
   localStoragePlugin,
-  remoteStorageDemo,
 ];
 
 let booted = false;
