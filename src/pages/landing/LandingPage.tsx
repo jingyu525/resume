@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useI18n } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { LanguageSwitcher } from "@/features/language-switch/LanguageSwitcher";
@@ -28,6 +28,7 @@ const ENGINEERING = [
 
 export function LandingPage() {
   const { t, locale } = useI18n();
+  const navigate = useNavigate();
   const themePlugin = getTheme(DEFAULT_APPEARANCE.theme);
   const theme = { ...resolveResumeTheme(DEFAULT_APPEARANCE), ...(themePlugin?.cssVars ?? {}) };
 
@@ -70,7 +71,7 @@ export function LandingPage() {
             >
               <Github size={16} /> {t("nav.github")}
             </a>
-            <Button size="sm" className="ml-1" onClick={() => (window.location.href = "/editor")}>
+            <Button size="sm" className="ml-1" onClick={() => navigate("/editor")}>
               {t("nav.try")}
             </Button>
           </nav>
