@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useI18n } from "@/shared/i18n";
 import { useUndoRedoShortcuts } from "@/features/undo-redo/UndoRedo";
+import { useExitGuard } from "@/features/persistence/useExitGuard";
 import { EditPanel } from "@/features/resume-editing/EditPanel";
 import { AppearancePanel } from "@/features/appearance-control/AppearancePanel";
 import { EditorToolbar } from "@/widgets/editor-toolbar/EditorToolbar";
@@ -12,6 +13,7 @@ import { X } from "lucide-react";
 /** 编辑器页：桌面左编辑面板 + 右 A4 预览；移动端底部 Tab 切换编辑/预览，默认进预览（FR-2） */
 export function EditorPage() {
   useUndoRedoShortcuts();
+  useExitGuard();
   const { t } = useI18n();
   const [showAppearance, setShowAppearance] = useState(false);
   const [mobileTab, setMobileTab] = useState<"edit" | "preview">("preview");

@@ -1,12 +1,14 @@
 import { useEffect } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
 import { savePersisted, STORAGE_VERSION } from "@/store/persistence";
+import { markDirty, clearDirty } from "./dirty";
 
 /** 自动保存（FR-9 / NFR-2）：与历史/写盘解耦，防抖写盘，不阻塞编辑。写盘经 StoragePlugin。 */
 export function useAutoSave() {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const unsub = useResumeStore.subscribe((state) => {
+      markDirty();
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
         void savePersisted({
@@ -14,6 +16,7 @@ export function useAutoSave() {
           resume: state.resume,
           appearance: state.appearance,
         });
+        clearDirty();
       }, 600);
     });
     return () => {

@@ -6,15 +6,18 @@ import { DropdownMenu } from "@/shared/ui/dropdown";
 import { Dialog } from "@/shared/ui/dialog";
 import { Button } from "@/shared/ui/button";
 import { exportBackup, useImportBackup } from "@/features/backup-io/backup";
-import { MoreHorizontal, Download, Upload, Sparkles, Trash2 } from "lucide-react";
+import { MoreHorizontal, Download, Upload, Sparkles, Trash2, Briefcase } from "lucide-react";
+import { ROLE_IDS } from "@/plugins/resume-template";
 
 export function MoreMenu() {
   const { t } = useI18n();
   const toast = useToast();
   const fillSample = useResumeStore((s) => s.fillSample);
   const clearAll = useResumeStore((s) => s.clearAll);
+  const applyTemplate = useResumeStore((s) => s.applyTemplate);
   const importBackup = useImportBackup();
   const [confirmClear, setConfirmClear] = useState(false);
+  const [showRoles, setShowRoles] = useState(false);
 
   return (
     <>
@@ -48,6 +51,11 @@ export function MoreMenu() {
             },
           },
           {
+            label: t("more.roleTemplate"),
+            icon: <Briefcase size={15} />,
+            onClick: () => setShowRoles(true),
+          },
+          {
             label: t("more.clear"),
             icon: <Trash2 size={15} />,
             danger: true,
@@ -71,6 +79,30 @@ export function MoreMenu() {
             }}
           >
             {t("common.confirm")}
+          </Button>
+        </div>
+      </Dialog>
+
+      <Dialog open={showRoles} onClose={() => setShowRoles(false)} title={t("more.roleTemplate")}>
+        <p className="text-sm text-muted-foreground">{t("more.roleTemplate.confirm")}</p>
+        <div className="mt-4 flex flex-col gap-2">
+          {ROLE_IDS.map((role) => (
+            <Button
+              key={role}
+              variant="outline"
+              onClick={() => {
+                applyTemplate(role);
+                setShowRoles(false);
+                toast(t("toast.sampleFilled"));
+              }}
+            >
+              {t(`role.${role}`)}
+            </Button>
+          ))}
+        </div>
+        <div className="mt-5 flex justify-end">
+          <Button variant="ghost" onClick={() => setShowRoles(false)}>
+            {t("common.cancel")}
           </Button>
         </div>
       </Dialog>

@@ -12,7 +12,7 @@ import type {
   ResumeSection,
   SectionKind,
 } from "@/entities/resume/model";
-import { createEmptyResume, createSampleResume } from "@/plugins/resume-template";
+import { createEmptyResume, createSampleResume, createRoleResume, type RoleId } from "@/plugins/resume-template";
 import { getSectionType } from "@/plugins/core/registry";
 import { newId } from "@/shared/lib/id";
 import { loadPersisted } from "./persistence";
@@ -74,6 +74,7 @@ interface ResumeState {
 
   fillSample: () => void;
   clearAll: () => void;
+  applyTemplate: (role: RoleId) => void;
 
   loadState: (resume: ResumeData, appearance: AppearancePref) => void;
 }
@@ -295,6 +296,14 @@ export const useResumeStore = create<ResumeState>()(
 
       fillSample: () => set({ resume: createSampleResume() }),
       clearAll: () => set({ resume: createEmptyResume() }),
+
+      applyTemplate: (role) => {
+        // 应用岗位模板是一次性替换，不该进撤销历史（否则首次撤销会清掉刚应用的模板）
+        const temporal = useResumeStore.temporal.getState();
+        temporal.pause();
+        useResumeStore.setState({ resume: createRoleResume(role) });
+        temporal.resume();
+      },
 
       loadState: (resume, appearance) => set({ resume, appearance }),
     }),
