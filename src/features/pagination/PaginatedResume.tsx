@@ -7,7 +7,7 @@ import { getTheme } from "@/plugins/core/registry";
 import { useI18n } from "@/shared/i18n";
 import { buildBlocks, type Block } from "./buildBlocks";
 import { distributeBlocks } from "./distribute";
-import { BlockView } from "./BlockView";
+import { BlockView, type BlockEditors } from "./BlockView";
 
 const MM = 96 / 25.4;
 const SIDEBAR_MM = 62;
@@ -18,6 +18,8 @@ export interface PaginatedResumeProps {
   locale: Locale;
   appearance: AppearancePref;
   onTotalPages?: (n: number) => void;
+  /** 编辑回调：传入即就地可编辑（编辑器）；不传则整页只读（落地页示例） */
+  editors?: BlockEditors;
 }
 
 export function PaginatedResume({
@@ -25,6 +27,7 @@ export function PaginatedResume({
   locale,
   appearance,
   onTotalPages,
+  editors,
 }: PaginatedResumeProps) {
   const { t } = useI18n();
   // 主题插件贡献的 CSS 变量合并进简历根节点（M6：主题可插件安装）
@@ -96,7 +99,7 @@ export function PaginatedResume({
       }}
       style={{ display: "flow-root" }}
     >
-      <BlockView block={b} locale={locale} />
+      <BlockView block={b} locale={locale} resume={resume} editors={editors} />
     </div>
   );
 

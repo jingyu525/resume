@@ -11,6 +11,10 @@ export function PreviewPane({ coach = false }: { coach?: boolean }) {
   const resume = useResumeStore((s) => s.resume);
   const locale = useResumeStore((s) => s.locale);
   const appearance = useResumeStore((s) => s.appearance);
+  // 就地编辑：预览区即编辑器，把 store 的改写动作注入分页组件
+  const updateBasicLocalized = useResumeStore((s) => s.updateBasicLocalized);
+  const updateBasicPlain = useResumeStore((s) => s.updateBasicPlain);
+  const renameSection = useResumeStore((s) => s.renameSection);
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -59,6 +63,7 @@ export function PreviewPane({ coach = false }: { coach?: boolean }) {
             locale={locale}
             appearance={appearance}
             onTotalPages={setPages}
+            editors={{ updateBasicLocalized, updateBasicPlain, renameSection }}
           />
         </div>
       </div>
