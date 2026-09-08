@@ -17,17 +17,18 @@ describe("i18n 回退链（FR-6）", () => {
     expect(translate("zh", "nonexistent.key")).toBe("nonexistent.key");
   });
 
-  it("多语言字段回退：当前→默认(zh)→任一已有", () => {
-    // 仅 en 有值，zh 缺失 -> 回退到 en
+  it("多语言字段回退：当前→默认(en)→任一已有", () => {
+    // 仅 en 有值，当前 zh 缺失 -> 默认 en 命中 -> 回退到 en
     const field = { en: "Hello" };
     expect(localizedValue(field, "zh")).toBe("Hello");
     // 当前与默认都缺失，回退到任意已有
     expect(localizedValue({ de: "Hallo" }, "ja")).toBe("Hallo");
   });
 
-  it("默认语言存在时优先默认", () => {
+  it("默认语言存在时优先默认（默认语言为 en）", () => {
     const field = { zh: "你好", en: "Hello" };
-    expect(localizedValue(field, "ko")).toBe("你好");
+    // ko 缺失 -> 优先回退到默认语言 en
+    expect(localizedValue(field, "ko")).toBe("Hello");
   });
 
   it("空字段回退为空串", () => {
@@ -53,10 +54,10 @@ describe("localizedSource（回退可见性：编辑区据此标注来源语言�
   });
 
   it("当前语言缺失回退到默认语言：标为回退并给出来源语言", () => {
-    // 德语缺失 -> 显示中文，编辑区需提示「正在显示 中文 回退」
+    // 德语缺失 -> 显示默认语言 en，编辑区需提示「正在显示 English 回退」
     expect(localizedSource({ zh: "自我评价", en: "Summary" }, "de")).toEqual({
-      value: "自我评价",
-      source: "zh",
+      value: "Summary",
+      source: "en",
       fallback: true,
     });
   });

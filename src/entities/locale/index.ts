@@ -13,7 +13,8 @@ export const BUILTIN_LOCALES: BuiltinLocale[] = ["zh", "en", "ja", "de", "ko"];
 /** 已注册语言列表：语言包插件注册后追加。当前阶段等于内置五语，但类型开放。 */
 export const LOCALES: Locale[] = [...BUILTIN_LOCALES];
 
-export const DEFAULT_LOCALE: Locale = "zh";
+// 国际化产品：默认界面语言为英语（DEFAULT_LOCALE 同时是 localized/translate 的兜底回退语言）
+export const DEFAULT_LOCALE: Locale = "en";
 
 export const LOCALE_LABELS: Record<BuiltinLocale, string> = {
   zh: "中文",

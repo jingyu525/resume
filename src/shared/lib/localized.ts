@@ -23,7 +23,7 @@ export function localizedSource<T>(
 }
 
 /**
- * 多语言字段回退：当前语言 → 默认语言(zh) → 任一已有语言。
+ * 多语言字段回退：当前语言 → 默认语言(en) → 任一已有语言。
  * 保证缺语言也能出片（FR-6）。
  */
 export function localizedValue<T>(
