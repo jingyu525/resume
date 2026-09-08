@@ -5,12 +5,12 @@ import { useToast } from "@/shared/ui/toast";
 import { DropdownMenu } from "@/shared/ui/dropdown";
 import { Dialog } from "@/shared/ui/dialog";
 import { Button } from "@/shared/ui/button";
-import { exportBackup, useImportBackup } from "@/features/backup-io/backup";
+import { useImportBackup } from "@/features/backup-io/backup";
 import { localizedText } from "@/shared/lib/localized";
 import { richTextToPlain } from "@/shared/lib/sanitize";
 import type { Locale } from "@/entities/locale";
 import { createSampleResume, roleSkillHints, ROLE_IDS } from "@/plugins/resume-template";
-import { MoreHorizontal, Download, Upload, Sparkles, Trash2, Briefcase } from "lucide-react";
+import { MoreHorizontal, Upload, Sparkles, Trash2, Briefcase } from "lucide-react";
 
 export function MoreMenu() {
   const { t } = useI18n();
@@ -37,14 +37,6 @@ export function MoreMenu() {
             label: t("more.import"),
             icon: <Upload size={15} />,
             onClick: importBackup,
-          },
-          {
-            label: t("more.export"),
-            icon: <Download size={15} />,
-            onClick: () => {
-              exportBackup();
-              toast(t("toast.exported"));
-            },
           },
           {
             label: t("more.fillSample"),

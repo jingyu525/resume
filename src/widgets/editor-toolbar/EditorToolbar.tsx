@@ -6,9 +6,11 @@ import { UndoRedoButtons } from "@/features/undo-redo/UndoRedo";
 import { LanguageSwitcher } from "@/features/language-switch/LanguageSwitcher";
 import { MoreMenu } from "@/widgets/editor-toolbar/MoreMenu";
 import { ExportMenu } from "./ExportMenu";
+import { exportBackup } from "@/features/backup-io/backup";
+import { useToast } from "@/shared/ui/toast";
 import { ACCENT_COLORS } from "@/shared/config/presets";
 import { cn } from "@/shared/lib/cn";
-import { FileText, Palette } from "lucide-react";
+import { FileText, Palette, DatabaseBackup } from "lucide-react";
 
 export function EditorToolbar({
   onToggleAppearance,
@@ -16,6 +18,7 @@ export function EditorToolbar({
   onToggleAppearance: () => void;
 }) {
   const { t } = useI18n();
+  const toast = useToast();
   const appearance = useResumeStore((s) => s.appearance);
   const setAppearance = useResumeStore((s) => s.setAppearance);
   const locale = useResumeStore((s) => s.locale);
@@ -56,6 +59,19 @@ export function EditorToolbar({
           <Palette size={18} />
         </IconButton>
         <LanguageSwitcher showLabel={false} />
+        {/*
+          备份是一级入口，不藏在「更多」里：本地存储是易失的（清缓存 / 换设备 /
+          配额写满），而简历内容是用户唯一无法重建的东西——备份才是它真正的保险。
+        */}
+        <IconButton
+          label={t("more.export")}
+          onClick={() => {
+            exportBackup();
+            toast(t("toast.exported"));
+          }}
+        >
+          <DatabaseBackup size={18} />
+        </IconButton>
         <MoreMenu />
         <ExportMenu />
         <span className="sr-only">{locale}</span>
