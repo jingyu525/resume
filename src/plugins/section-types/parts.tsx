@@ -16,6 +16,7 @@ import { Button, IconButton } from "@/shared/ui/button";
 import { Switch } from "@/shared/ui/switch";
 import { EditableField } from "@/shared/ui/editable-field";
 import { useDragReorder } from "@/shared/ui/use-drag-reorder";
+import { sampleHints, withSampleHint } from "@/plugins/sample-hints";
 import { ArrowDown, ArrowUp, Plus, Trash2, GripVertical } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 
@@ -168,6 +169,9 @@ export function ItemsEditor({ section, locale }: { section: ResumeSection; local
   const removeItem = useResumeStore((s) => s.removeItem);
   const moveItem = useResumeStore((s) => s.moveItem);
   const items = section.items;
+  // 示例只作占位提示：字段为空才显示，一输入即消失，永不写入简历数据
+  const hints = sampleHints(section.kind, locale);
+  const eg = t("sample.eg");
   const reorderItem = useResumeStore((s) => s.reorderItem);
   const drag = useDragReorder((from, to) => reorderItem(section.id, items[from].id, to));
 
@@ -220,14 +224,14 @@ export function ItemsEditor({ section, locale }: { section: ResumeSection; local
           <div className="space-y-1.5">
             <LocalizedField
               className="h-8"
-              placeholder={t("edit.itemTitlePlaceholder")}
+              placeholder={withSampleHint(t("edit.itemTitlePlaceholder"), hints.title, eg)}
               field={it.title}
               locale={locale}
               onChange={(v) => updateLocalized(section.id, it.id, "title", locale, v)}
             />
             <LocalizedField
               className="h-8"
-              placeholder={t("edit.itemSubtitlePlaceholder")}
+              placeholder={withSampleHint(t("edit.itemSubtitlePlaceholder"), hints.subtitle, eg)}
               field={it.subtitle}
               locale={locale}
               onChange={(v) => updateLocalized(section.id, it.id, "subtitle", locale, v)}
@@ -258,7 +262,7 @@ export function ItemsEditor({ section, locale }: { section: ResumeSection; local
             </label>
             <LocalizedField
               className="min-h-16 text-xs"
-              placeholder={t("edit.summaryPlaceholder")}
+              placeholder={withSampleHint(t("edit.summaryPlaceholder"), hints.description, eg)}
               field={it.description}
               locale={locale}
               multiline
@@ -270,7 +274,13 @@ export function ItemsEditor({ section, locale }: { section: ResumeSection; local
         </div>
       ))}
       {items.length === 0 && (
-        <p className="px-1 text-xs text-muted-foreground">{t("edit.fillHint")}</p>
+        <p className="px-1 text-xs text-muted-foreground">
+          {t("edit.fillHint")}
+          {/* 尚未添加条目时也要给出示例：否则用户面对空白章节无从下手 */}
+          {hints.title
+            ? ` ${eg}${hints.title}${hints.subtitle ? ` · ${hints.subtitle}` : ""}`
+            : ""}
+        </p>
       )}
     </div>
   );
@@ -286,6 +296,9 @@ export function GroupsEditor({ section, locale }: { section: ResumeSection; loca
   const groups = section.groups;
   const reorderGroup = useResumeStore((s) => s.reorderGroup);
   const drag = useDragReorder((from, to) => reorderGroup(section.id, groups[from].id, to));
+  // 同上：示例只是占位提示，不写入简历
+  const hints = sampleHints(section.kind, locale);
+  const eg = t("sample.eg");
 
   return (
     <div className="space-y-2">
@@ -335,14 +348,14 @@ export function GroupsEditor({ section, locale }: { section: ResumeSection; loca
           </div>
           <LocalizedField
             className="h-8"
-            placeholder={t("edit.groupNamePlaceholder")}
+            placeholder={withSampleHint(t("edit.groupNamePlaceholder"), hints.groupName, eg)}
             field={g.name}
             locale={locale}
             onChange={(v) => updateName(section.id, g.id, locale, v)}
           />
           <LocalizedField
             className="mt-1.5 min-h-14 text-xs"
-            placeholder={t("edit.skillItemPlaceholder")}
+            placeholder={withSampleHint(t("edit.skillItemPlaceholder"), hints.groupItems, eg)}
             field={g.items}
             locale={locale}
             multiline
@@ -350,6 +363,12 @@ export function GroupsEditor({ section, locale }: { section: ResumeSection; loca
           />
         </div>
       ))}
+      {groups.length === 0 && (
+        <p className="px-1 text-xs text-muted-foreground">
+          {t("edit.fillHint")}
+          {hints.groupName ? ` ${eg}${hints.groupName}：${hints.groupItems ?? ""}` : ""}
+        </p>
+      )}
     </div>
   );
 }

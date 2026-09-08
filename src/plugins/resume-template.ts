@@ -1,5 +1,7 @@
-import type { Localized, ResumeData, ResumeSection, RichText, SkillGroup } from "@/entities/resume/model";
+import type { Locale } from "@/entities/locale";
+import type { Localized, ResumeData, ResumeSection, SkillGroup } from "@/entities/resume/model";
 import type { SectionTypePlugin } from "@/plugins/core/types";
+import { localizedText } from "@/shared/lib/localized";
 import { newId } from "@/shared/lib/id";
 import { getSectionType } from "./core/registry";
 
@@ -90,10 +92,12 @@ export function createSampleResume(): ResumeData {
 }
 
 /**
- * 岗位模板（P1-8）：不同目标岗一键切换关键词 / 语气。
+ * 岗位模板（P1-8）：不同目标岗一键套用对应的【结构框架】。
  *
- * 复用示例简历骨架，仅替换「职位 + 自我评价 + 专业技能」三段与岗位强相关的内容，
- * 工作经历 / 项目 / 教育沿用通用示例，用户在此基础上改写。每段均五语齐全。
+ * 内容边界（第一性原理：系统只能给结构、范式与领域知识，不能给事实）：
+ *  - 给：岗位名、该岗位的技能分类维度；
+ *  - 不给：自我评价、工作经历、项目、教育——这些是用户的事实，一律留空。
+ * 每段框架均五语齐全。
  */
 export type RoleId = "backend" | "pm" | "design";
 export const ROLE_IDS: RoleId[] = ["backend", "pm", "design"];
@@ -104,29 +108,9 @@ const ROLE_TITLE: Record<RoleId, Localized<string>> = {
   design: { zh: "UI 设计师", en: "UI Designer", ja: "UI デザイナー", de: "UI-Designer", ko: "UI 디자이너" },
 };
 
-const ROLE_SUMMARY: Record<RoleId, Localized<RichText>> = {
-  backend: {
-    zh: "<p>6 年后端研发，专注高并发与分布式系统。主导过日均 10 亿请求的服务重构，P99 延迟下降 60%。</p><p>熟悉 Go / Java 与云原生体系，重视可观测性与稳定性。</p>",
-    en: "<p>6 years backend engineering on high-concurrency and distributed systems. Led a rebuild serving 1B requests/day, cutting P99 latency by 60%.</p><p>Strong in Go/Java and cloud-native, focused on observability and reliability.</p>",
-    ja: "<p>バックエンド開発 6 年、高負荷・分散システムが専門。1 日 10 億リクエストの基盤を再構築し P99 遅延を 60% 改善。</p><p>Go/Java とクラウドネイティブに精通、可観測性と安定性を重視。</p>",
-    de: "<p>6 Jahre Backend mit Fokus auf Hochlast- und verteilte Systeme. Leitete den Umbau eines 1-Mrd-Requests/Tag-Dienstes, P99-Latenz −60 %.</p><p>Stark in Go/Java und Cloud-native, Fokus auf Observability und Stabilität.</p>",
-    ko: "<p>백엔드 6년, 고부하·분산 시스템 전문. 일 10억 요청 서비스 개편 주도, P99 지연 60% 감소.</p><p>Go/Java 와 클라우드 네이티브 숙련, 관측성과 안정성 중시.</p>",
-  },
-  pm: {
-    zh: "<p>6 年 B 端产品经理，擅长把模糊业务诉求拆解为可落地方案。主导过从 0 到 1 的多租户平台，<strong>上线一年服务 300+ 企业</strong>，续费率 92%。</p>",
-    en: "<p>6 years B2B product manager turning ambiguous needs into shippable roadmaps. Led a 0-to-1 multi-tenant platform, <strong>serving 300+ companies</strong> with 92% retention.</p>",
-    ja: "<p>B 端 PM 6 年。曖昧な要件を実行可能なロードマップへ落とし込むのが得意。0 から 1 へのマルチテナント基盤を主導、<strong>リリース 1 年で 300 社以上</strong>、継続率 92%。</p>",
-    de: "<p>6 Jahre B2B-Produktmanager; wandelt vage Anforderungen in umsetzbare Roadmaps. Leitete eine 0-zu-1-Multi-Tenant-Plattform, <strong>bei 300+ Firmen</strong>, 92 % Retention.</p>",
-    ko: "<p>B2B 제품 매니저 6년, 모호한 요구사를 실행 가능한 로드맵으로 정리. 0→1 멀티테넌트 플랫폼 주도, <strong>300+ 기업</strong> 도입, 유지율 92%.</p>",
-  },
-  design: {
-    zh: "<p>5 年 UI 设计，专注设计系统与复杂 B 端界面。搭建过跨 30+ 产品的组件库，<strong>设计交付效率提升 40%</strong>。</p><p>熟悉从用研到高保真的完整链路，能与前端紧密协作还原。</p>",
-    en: "<p>5 years UI design on design systems and complex B2B interfaces. Built a component library across 30+ products, <strong>+40% delivery efficiency</strong>. Comfortable from research to high-fidelity with close frontend collaboration.</p>",
-    ja: "<p>UI デザイン 5 年、デザインシステムと複雑な B 端画面が専門。30 以上のプロダクトをまたぐコンポーネントライブラリを構築、<strong>制作効率 40% 向上</strong>。リサーチからハイフィデリティ、フロントエンドとの密な協業まで対応。</p>",
-    de: "<p>5 Jahre UI-Design mit Fokus auf Designsysteme und komplexe B2B-Oberflächen. Baute eine Komponentenbibliothek für 30+ Produkte, <strong>+40 % Effizienz</strong>. Von Research bis High-Fidelity, eng mit Frontend.</p>",
-    ko: "<p>UI 디자인 5년, 디자인 시스템과 복잡한 B2B 화면 전문. 30+ 제품을 아우르는 컴포넌트 라이브러리 구축, <strong>제작 효율 40% 향상</strong>. 리서치부터 하이피델리티, 프론트엔드와 긴밀 협업.</p>",
-  },
-};
+// 岗位自我评价的「示例文案」已删除：那是编造的经历与数字（"6 年、日均 10 亿请求"
+// "P99 下降 60%"），一旦写进简历就逼着用户逐条改写，漏一处即以虚构身份投递。
+// 写法范式改由占位提示（sampleHints）与只读的「示例参考」提供，不进 ResumeData。
 
 function langMap(zh: string, en: string, ja: string, de: string, ko: string): Localized<string> {
   return { zh, en, ja, de, ko };
@@ -185,34 +169,44 @@ const ROLE_SKILLS: Record<RoleId, SkillGroup[]> = {
   ],
 };
 
-/** 生成指定岗位的示例简历（五语齐全）。应用为「一键切换岗位」模板。 */
+/**
+ * 生成指定岗位的简历框架：只给【框架】，不给【事实】。
+ *
+ *  - 岗位名是通用称谓（不是个人经历），可安全预填，五语齐全；
+ *  - 技能分类是领域知识（后端岗通常从语言/基础设施/数据/工程实践几维度展示），
+ *    但「具体会什么」是用户的事实，因此条目一律留空；
+ *  - 自我评价 / 经历 / 项目 / 教育全部留空——系统不知道用户做过什么。
+ *
+ * 旧实现以示例简历为底（含虚构公司与编造数字），逼着用户在其上逐条改写，
+ * 漏一处即以虚构身份投递出去。那等于让用户为编造内容背书，故不再如此。
+ */
 export function createRoleResume(role: RoleId): ResumeData {
-  const base = createSampleResume();
+  const base = createEmptyResume();
   base.basics.title = { ...ROLE_TITLE[role] };
-  base.sections = base.sections.map((s) => {
-    if (s.kind === "summary") {
-      return {
-        ...s,
-        items: [
-          {
-            id: newId("it"),
-            title: {},
-            subtitle: {},
-            startDate: "",
-            endDate: "",
-            current: false,
-            description: { ...ROLE_SUMMARY[role] },
-          },
-        ],
-      };
-    }
-    if (s.kind === "skills") {
-      return {
-        ...s,
-        groups: ROLE_SKILLS[role].map((g) => ({ ...g, id: newId("grp"), name: { ...g.name }, items: { ...g.items } })),
-      };
-    }
-    return s;
-  });
+  base.sections = base.sections.map((s) =>
+    s.kind === "skills"
+      ? {
+          ...s,
+          groups: ROLE_SKILLS[role].map((g) => ({
+            id: newId("grp"),
+            name: { ...g.name },
+            items: {},
+          })),
+        }
+      : s,
+  );
   return base;
+}
+
+/**
+ * 该岗位的技能分类与典型技能——仅供只读参考，不写入简历。
+ *
+ * 「后端常见 Go/Java/K8s」是领域知识，可作提示；但它不等于用户掌握的技能，
+ * 写入即替用户背书，因此只在界面展示。
+ */
+export function roleSkillHints(role: RoleId, locale: Locale): { name: string; items: string }[] {
+  return ROLE_SKILLS[role].map((g) => ({
+    name: localizedText(g.name, locale),
+    items: localizedText(g.items, locale).split("\n").join(" · "),
+  }));
 }

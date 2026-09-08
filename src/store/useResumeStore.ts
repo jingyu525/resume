@@ -12,7 +12,7 @@ import type {
   ResumeSection,
   SectionKind,
 } from "@/entities/resume/model";
-import { createEmptyResume, createSampleResume, createRoleResume, type RoleId } from "@/plugins/resume-template";
+import { createEmptyResume, createRoleResume, type RoleId } from "@/plugins/resume-template";
 import { getSectionType, getTheme } from "@/plugins/core/registry";
 import { applyThemePreset } from "@/shared/lib/themePreset";
 import { newId } from "@/shared/lib/id";
@@ -81,7 +81,6 @@ interface ResumeState {
   /** 选主题：一键套用其风格预设（版式/主色/气质/疏密），未声明项保留原值 */
   applyTheme: (themeId: string) => void;
 
-  fillSample: () => void;
   clearAll: () => void;
   applyTemplate: (role: RoleId) => void;
 
@@ -345,7 +344,6 @@ export const useResumeStore = create<ResumeState>()(
       applyTheme: (themeId) =>
         set((s) => ({ appearance: applyThemePreset(s.appearance, getTheme(themeId)) })),
 
-      fillSample: () => set({ resume: createSampleResume() }),
       clearAll: () => set({ resume: createEmptyResume() }),
 
       applyTemplate: (role) => {
@@ -397,7 +395,18 @@ export const useResumeStore = create<ResumeState>()(
  */
 export function hydrateFromPersisted(): boolean {
   const persisted = loadPersisted();
-  if (!persisted) return false;
+  if (!persisted) {
+    // 首次访问（本地无数据）：此时注册表已就绪，用正确的默认章节初始化。
+    // 模块顶层的 `resume: createEmptyResume()` 会在 bootstrapPlugins() 之前求值
+    // （章节插件经 parts.tsx 反向 import 本模块），注册表为空会生成 0 章节，
+    // 表现为"首次进编辑页界面空白"。这里补种一次，覆盖该时序窗口。
+    // 同样暂停时间旅行：首次默认简历不是一次编辑，不该进撤销历史。
+    const temporal = useResumeStore.temporal.getState();
+    temporal.pause();
+    useResumeStore.setState({ resume: createEmptyResume() });
+    temporal.resume();
+    return false;
+  }
   // 用 pause/resume 包住：恢复不是一次编辑，不该进撤销历史
   //（否则用户第一次按撤销就会把刚恢复的简历清空）
   const temporal = useResumeStore.temporal.getState();

@@ -72,4 +72,26 @@ describe("本地存储恢复（FR-9）", () => {
     hydrateFromPersisted();
     expect(useResumeStore.temporal.getState().pastStates.length).toBe(0);
   });
+
+  it("首次访问（无本地数据）补种默认简历：含 5 个内置章节且不进撤销历史", async () => {
+    installMemoryStorage();
+    const { useResumeStore, hydrateFromPersisted } = await import("@/store/useResumeStore");
+    const seeded = hydrateFromPersisted();
+    expect(seeded).toBe(false); // 没有恢复任何已存数据
+    const sections = useResumeStore.getState().resume.sections;
+    expect(sections.length).toBe(5); // summary/experience/project/education/skills
+    // 章节顺序与默认一致，且均有标题
+    expect(sections.map((s) => s.kind)).toEqual([
+      "summary",
+      "experience",
+      "project",
+      "education",
+      "skills",
+    ]);
+    expect(sections.every((s) => typeof s.title === "object" && Object.keys(s.title).length > 0)).toBe(
+      true,
+    );
+    // 补种不是一次编辑，不该进撤销历史
+    expect(useResumeStore.temporal.getState().pastStates.length).toBe(0);
+  });
 });
