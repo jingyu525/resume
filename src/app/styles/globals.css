@@ -138,6 +138,10 @@ body {
   font-size: 0.9em;
   color: #333;
 }
+/* 全部联系方式都为空时整行收起，避免留一段空白间距 */
+.rs-contact:empty {
+  display: none;
+}
 .rs-contact span {
   display: inline-flex;
   align-items: center;

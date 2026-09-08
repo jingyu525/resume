@@ -59,30 +59,30 @@ function BasicsBlock({ locale }: { locale: Locale }) {
       />
       {/*
         联系方式只有这一行：它是可编辑的（预览区即编辑器）。
-        空字段在屏幕上以灰色占位提示填写，打印时由 .rs-empty 隐藏，避免占位文字上纸。
+        空字段不渲染、不占位——用户删除了某个联系方式，版面就应干净地去掉它；
+        重新填写即「再添加」。打印时 .rs-empty 仍兜底，避免任何残留占位文字上纸。
       */}
       <div className="rs-contact rs-contact-edit">
-        {fields.map((field) => {
-          const value = readBasicField(basics, field, locale);
-          return (
-            <EditableField
-              key={field.id}
-              ariaLabel={t(field.labelKey)}
-              html={value}
-              placeholder={t(field.labelKey)}
-              multiline={false}
-              className={cn(
-                field.fieldKey === "phone" && "rs-inline-plain",
-                !value && "rs-empty",
-              )}
-              onChange={(v) =>
-                field.localized
-                  ? updateLocalized(field.fieldKey as BasicLocalizedField, locale, v)
-                  : updatePlain(field.fieldKey as BasicPlainField, v)
-              }
-            />
-          );
-        })}
+        {fields
+          .filter((field) => readBasicField(basics, field, locale).trim() !== "")
+          .map((field) => {
+            const value = readBasicField(basics, field, locale);
+            return (
+              <EditableField
+                key={field.id}
+                ariaLabel={t(field.labelKey)}
+                html={value}
+                placeholder={t(field.labelKey)}
+                multiline={false}
+                className={cn(field.fieldKey === "phone" && "rs-inline-plain")}
+                onChange={(v) =>
+                  field.localized
+                    ? updateLocalized(field.fieldKey as BasicLocalizedField, locale, v)
+                    : updatePlain(field.fieldKey as BasicPlainField, v)
+                }
+              />
+            );
+          })}
       </div>
     </div>
   );

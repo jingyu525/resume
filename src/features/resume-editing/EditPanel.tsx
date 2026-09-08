@@ -42,9 +42,19 @@ export function EditPanel() {
               onChange={(v) => updateLocalized("title", locale, v)}
             />
           </Field>
-          {/* 联系方式由字段插件驱动：地域差异（微信 / LinkedIn）靠增删插件解决 */}
+          {/* 联系方式由字段插件驱动：地域差异（微信 / LinkedIn）靠增删插件解决。
+              每个字段带删除按钮：清空即「删除」，预览随之移除（不占位）；重新填写即「再添加」 */}
           {fields.map((field) => (
-            <Field key={field.id} label={t(field.labelKey)}>
+            <Field
+              key={field.id}
+              label={t(field.labelKey)}
+              onRemove={() =>
+                field.localized
+                  ? updateLocalized(field.fieldKey as "city", locale, "")
+                  : updatePlain(field.fieldKey as "phone", "")
+              }
+              removeLabel={t("edit.delete")}
+            >
               {field.localized ? (
                 <LocalizedField
                   field={localizedOrEmpty(basics, field.fieldKey)}
@@ -171,14 +181,31 @@ function Field({
   label,
   className,
   children,
+  onRemove,
+  removeLabel,
 }: {
   label: string;
   className?: string;
   children: React.ReactNode;
+  onRemove?: () => void;
+  removeLabel?: string;
 }) {
   return (
     <label className={className}>
-      <span className="mb-1 block text-xs text-muted-foreground">{label}</span>
+      <span className="mb-1 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span className="truncate">{label}</span>
+        {onRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            aria-label={removeLabel}
+            title={removeLabel}
+            className="shrink-0 rounded p-0.5 hover:bg-secondary hover:text-destructive"
+          >
+            <Trash2 size={13} />
+          </button>
+        )}
+      </span>
       {children}
     </label>
   );
