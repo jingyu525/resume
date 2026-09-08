@@ -66,6 +66,7 @@ describe("内置插件注册", () => {
       "education",
       "skills",
       "certification",
+      "languages",
     ]);
     // 供 migrate 判断"未知 kind"：必须与上面的顺序一致
     expect(registeredSectionKinds()).toEqual([
@@ -75,6 +76,7 @@ describe("内置插件注册", () => {
       "education",
       "skills",
       "certification",
+      "languages",
     ]);
   });
 
