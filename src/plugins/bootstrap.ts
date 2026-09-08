@@ -22,6 +22,7 @@ import { educationSection } from "./section-types/education";
 import { skillsSection } from "./section-types/skills";
 import { certificationSection } from "./section-types/certification";
 import { languagesSection } from "./section-types/languages";
+import { portfolioSection } from "./section-types/portfolio";
 import { classicTheme } from "./themes/classic";
 import { modernTheme } from "./themes/modern";
 import { editorialTheme } from "./themes/editorial";
@@ -46,6 +47,7 @@ export const BUILTIN_PLUGINS: Plugin[] = [
   skillsSection,
   certificationSection,
   languagesSection,
+  portfolioSection,
   // 主题：内置四主题 + 示范学术主题（默认禁用），M6 起经注册表切换
   classicTheme,
   modernTheme,
