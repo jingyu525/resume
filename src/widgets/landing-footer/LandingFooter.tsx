@@ -15,8 +15,9 @@ export function LandingFooter() {
             {t("hero.ctaPrimary")} <ArrowRight size={18} />
           </Button>
         </div>
-        <p className="mx-auto mt-8 flex max-w-xl items-center justify-center gap-2 text-sm text-muted-foreground">
-          <ShieldCheck size={16} className="text-primary" /> {t("footer.privacy")}
+        <p className="mx-auto mt-8 flex max-w-xl items-start justify-center gap-2 text-sm text-muted-foreground">
+          <ShieldCheck size={16} className="mt-0.5 shrink-0 text-primary" />
+          <span>{t("footer.privacy")}</span>
         </p>
       </div>
     </footer>

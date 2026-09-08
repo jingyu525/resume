@@ -19,7 +19,6 @@ export function LandingHero() {
         <h1 className="text-balance text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
           {t("hero.title")}
         </h1>
-        <p className="mt-3 text-lg font-medium text-primary">{t("hero.titleEn")}</p>
         <p className="mx-auto mt-6 max-w-xl text-base text-muted-foreground">{t("hero.subtitle")}</p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Button size="lg" onClick={() => nav("/editor")}>
