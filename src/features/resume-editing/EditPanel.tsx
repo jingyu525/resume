@@ -8,7 +8,9 @@ import { IconButton } from "@/shared/ui/button";
 import { DropdownMenu } from "@/shared/ui/dropdown";
 import { listBasicsFields, listSectionTypes, getSectionType } from "@/plugins/core/registry";
 import { LocalizedField } from "@/plugins/section-types/parts";
-import { Plus, Trash2, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react";
+import { cn } from "@/shared/lib/cn";
+import { useDragReorder } from "@/shared/ui/use-drag-reorder";
+import { Plus, Trash2, ArrowUp, ArrowDown, Eye, EyeOff, GripVertical } from "lucide-react";
 
 /** 左编辑面板：基本信息 + 动态章节列表（增删改排序、隐藏、改标题、增删条目），FR-2 */
 export function EditPanel() {
@@ -19,8 +21,10 @@ export function EditPanel() {
   const updateLocalized = useResumeStore((s) => s.updateBasicLocalized);
   const updatePlain = useResumeStore((s) => s.updateBasicPlain);
   const addSection = useResumeStore((s) => s.addSection);
+  const reorderSection = useResumeStore((s) => s.reorderSection);
 
   const ordered = [...sections].sort((a, b) => a.order - b.order);
+  const drag = useDragReorder((from, to) => reorderSection(ordered[from].id, to));
   const fields = listBasicsFields();
 
   return (
@@ -90,7 +94,14 @@ export function EditPanel() {
         </div>
         <div className="space-y-3">
           {ordered.map((sec, i) => (
-            <SectionCard key={sec.id} section={sec} index={i} total={ordered.length} locale={locale} />
+            <SectionCard
+              key={sec.id}
+              section={sec}
+              index={i}
+              total={ordered.length}
+              locale={locale}
+              drag={drag}
+            />
           ))}
         </div>
       </section>
@@ -110,11 +121,13 @@ function SectionCard({
   index,
   total,
   locale,
+  drag,
 }: {
   section: ResumeSection;
   index: number;
   total: number;
   locale: Locale;
+  drag: ReturnType<typeof useDragReorder>;
 }) {
   const { t } = useI18n();
   const moveSection = useResumeStore((s) => s.moveSection);
@@ -126,8 +139,23 @@ function SectionCard({
   const plugin = getSectionType(section.kind);
 
   return (
-    <div className="rounded-xl border border-border bg-card p-3">
+    <div
+      className={cn(
+        "rounded-xl border border-border bg-card p-3",
+        drag.isDragging(index) && "opacity-50",
+        drag.isOver(index) && "border-primary ring-2 ring-primary/40",
+      )}
+      {...drag.rowProps(index)}
+    >
       <div className="mb-2 flex items-center gap-1.5">
+        <IconButton
+          label={t("edit.drag")}
+          size="sm"
+          className="cursor-grab active:cursor-grabbing"
+          {...drag.handleProps(index)}
+        >
+          <GripVertical size={15} />
+        </IconButton>
         <IconButton
           label={t("edit.up")}
           size="sm"

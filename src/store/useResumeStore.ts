@@ -34,12 +34,16 @@ interface ResumeState {
   addSection: (kind: SectionKind) => void;
   removeSection: (id: string) => void;
   moveSection: (id: string, dir: -1 | 1) => void;
+  /** 拖拽排序：直接落到指定位置（一次性重排，避免 ±1 连点产生多步撤销） */
+  reorderSection: (id: string, toIndex: number) => void;
   toggleSection: (id: string) => void;
   renameSection: (id: string, locale: Locale, value: string) => void;
 
   addItem: (sectionId: string) => void;
   removeItem: (sectionId: string, itemId: string) => void;
   moveItem: (sectionId: string, itemId: string, dir: -1 | 1) => void;
+  /** 拖拽排序：条目直接落到指定位置 */
+  reorderItem: (sectionId: string, itemId: string, toIndex: number) => void;
   updateItemLocalized: (
     sectionId: string,
     itemId: string,
@@ -62,6 +66,8 @@ interface ResumeState {
   addGroup: (sectionId: string) => void;
   removeGroup: (sectionId: string, groupId: string) => void;
   moveGroup: (sectionId: string, groupId: string, dir: -1 | 1) => void;
+  /** 拖拽排序：分组直接落到指定位置 */
+  reorderGroup: (sectionId: string, groupId: string, toIndex: number) => void;
   updateGroupName: (sectionId: string, groupId: string, locale: Locale, value: string) => void;
   updateGroupItems: (
     sectionId: string,
@@ -166,6 +172,19 @@ export const useResumeStore = create<ResumeState>()(
           return { resume: { ...s.resume, sections: reordered } };
         }),
 
+      reorderSection: (id, toIndex) =>
+        set((s) => {
+          const sorted = [...s.resume.sections].sort((a, b) => a.order - b.order);
+          const from = sorted.findIndex((x) => x.id === id);
+          // 夹紧越界索引：宁可落到首尾，也不能丢数据
+          const to = Math.max(0, Math.min(sorted.length - 1, toIndex));
+          if (from < 0 || from === to) return s;
+          const [moved] = sorted.splice(from, 1);
+          sorted.splice(to, 0, moved);
+          const reordered = sorted.map((sec, i) => ({ ...sec, order: i }));
+          return { resume: { ...s.resume, sections: reordered } };
+        }),
+
       toggleSection: (id) =>
         set((s) => ({
           resume: mapSection(s.resume, id, (sec) => ({ ...sec, visible: !sec.visible })),
@@ -203,6 +222,19 @@ export const useResumeStore = create<ResumeState>()(
             const swap = idx + dir;
             if (idx < 0 || swap < 0 || swap >= items.length) return sec;
             [items[idx], items[swap]] = [items[swap], items[idx]];
+            return { ...sec, items };
+          }),
+        })),
+
+      reorderItem: (sectionId, itemId, toIndex) =>
+        set((s) => ({
+          resume: mapSection(s.resume, sectionId, (sec) => {
+            const items = [...sec.items];
+            const from = items.findIndex((x) => x.id === itemId);
+            const to = Math.max(0, Math.min(items.length - 1, toIndex));
+            if (from < 0 || from === to) return sec;
+            const [moved] = items.splice(from, 1);
+            items.splice(to, 0, moved);
             return { ...sec, items };
           }),
         })),
@@ -270,6 +302,19 @@ export const useResumeStore = create<ResumeState>()(
             const swap = idx + dir;
             if (idx < 0 || swap < 0 || swap >= groups.length) return sec;
             [groups[idx], groups[swap]] = [groups[swap], groups[idx]];
+            return { ...sec, groups };
+          }),
+        })),
+
+      reorderGroup: (sectionId, groupId, toIndex) =>
+        set((s) => ({
+          resume: mapSection(s.resume, sectionId, (sec) => {
+            const groups = [...sec.groups];
+            const from = groups.findIndex((g) => g.id === groupId);
+            const to = Math.max(0, Math.min(groups.length - 1, toIndex));
+            if (from < 0 || from === to) return sec;
+            const [moved] = groups.splice(from, 1);
+            groups.splice(to, 0, moved);
             return { ...sec, groups };
           }),
         })),

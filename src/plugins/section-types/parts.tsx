@@ -15,7 +15,8 @@ import { richTextToPlain, textToRichText } from "@/shared/lib/sanitize";
 import { Button, IconButton } from "@/shared/ui/button";
 import { Switch } from "@/shared/ui/switch";
 import { EditableField } from "@/shared/ui/editable-field";
-import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
+import { useDragReorder } from "@/shared/ui/use-drag-reorder";
+import { ArrowDown, ArrowUp, Plus, Trash2, GripVertical } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 
 const identity = (v: string) => v;
@@ -167,12 +168,30 @@ export function ItemsEditor({ section, locale }: { section: ResumeSection; local
   const removeItem = useResumeStore((s) => s.removeItem);
   const moveItem = useResumeStore((s) => s.moveItem);
   const items = section.items;
+  const reorderItem = useResumeStore((s) => s.reorderItem);
+  const drag = useDragReorder((from, to) => reorderItem(section.id, items[from].id, to));
 
   return (
     <div className="space-y-2">
       {items.map((it, i) => (
-        <div key={it.id} className="rounded-lg bg-secondary/50 p-2">
+        <div
+          key={it.id}
+          className={cn(
+            "rounded-lg bg-secondary/50 p-2",
+            drag.isDragging(i) && "opacity-50",
+            drag.isOver(i) && "ring-2 ring-primary/50",
+          )}
+          {...drag.rowProps(i)}
+        >
           <div className="mb-1.5 flex items-center gap-1">
+            <IconButton
+              label={t("edit.drag")}
+              size="sm"
+              className="cursor-grab active:cursor-grabbing"
+              {...drag.handleProps(i)}
+            >
+              <GripVertical size={14} />
+            </IconButton>
             <IconButton
               label={t("edit.up")}
               size="sm"
@@ -265,12 +284,30 @@ export function GroupsEditor({ section, locale }: { section: ResumeSection; loca
   const removeGroup = useResumeStore((s) => s.removeGroup);
   const moveGroup = useResumeStore((s) => s.moveGroup);
   const groups = section.groups;
+  const reorderGroup = useResumeStore((s) => s.reorderGroup);
+  const drag = useDragReorder((from, to) => reorderGroup(section.id, groups[from].id, to));
 
   return (
     <div className="space-y-2">
       {groups.map((g, i) => (
-        <div key={g.id} className="rounded-lg bg-secondary/50 p-2">
+        <div
+          key={g.id}
+          className={cn(
+            "rounded-lg bg-secondary/50 p-2",
+            drag.isDragging(i) && "opacity-50",
+            drag.isOver(i) && "ring-2 ring-primary/50",
+          )}
+          {...drag.rowProps(i)}
+        >
           <div className="mb-1.5 flex items-center gap-1">
+            <IconButton
+              label={t("edit.drag")}
+              size="sm"
+              className="cursor-grab active:cursor-grabbing"
+              {...drag.handleProps(i)}
+            >
+              <GripVertical size={14} />
+            </IconButton>
             <IconButton
               label={t("edit.up")}
               size="sm"
