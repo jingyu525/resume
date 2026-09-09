@@ -1,6 +1,7 @@
-import { Suspense, lazy } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Suspense, lazy, useEffect } from "react";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ToastProvider } from "@/shared/ui/toast";
+import { trackPageview } from "@/shared/analytics/analytics";
 import { I18nProvider } from "./providers/I18nProvider";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { useAutoSave } from "@/features/persistence/useAutoSave";
@@ -14,6 +15,15 @@ const EditorPage = lazy(() =>
 
 function AutoSaveGate() {
   useAutoSave();
+  return null;
+}
+
+// SPA 路由切换时上报页面浏览（埋点默认关闭，无域名时不发起请求）
+function AnalyticsTracker() {
+  const location = useLocation();
+  useEffect(() => {
+    trackPageview();
+  }, [location.pathname]);
   return null;
 }
 
@@ -32,6 +42,7 @@ export function App() {
         <I18nProvider>
           <AutoSaveGate />
           <BrowserRouter basename="/resume/">
+            <AnalyticsTracker />
             <Suspense fallback={<RouteFallback />}>
               <Routes>
                 <Route path="/" element={<LandingPage />} />
