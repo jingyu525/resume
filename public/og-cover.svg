@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Résumé Studio 封面">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#1e40af"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#2563eb" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="24" flood-color="#000" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- 装饰大圆 -->
+  <circle cx="1050" cy="120" r="360" fill="url(#glow)"/>
+  <circle cx="140" cy="580" r="260" fill="#3b82f6" fill-opacity="0.12"/>
+
+  <!-- 网格点 -->
+  <g fill="#fff" fill-opacity="0.08">
+    <circle cx="90" cy="90" r="3"/>
+    <circle cx="130" cy="90" r="3"/>
+    <circle cx="170" cy="90" r="3"/>
+    <circle cx="210" cy="90" r="3"/>
+    <circle cx="90" cy="130" r="3"/>
+    <circle cx="130" cy="130" r="3"/>
+    <circle cx="170" cy="130" r="3"/>
+    <circle cx="210" cy="130" r="3"/>
+  </g>
+
+  <!-- 简历卡片示意 -->
+  <g transform="translate(760, 160)" filter="url(#shadow)">
+    <rect x="0" y="0" width="340" height="440" rx="16" fill="#ffffff"/>
+    <!-- 顶部色条 -->
+    <rect x="0" y="0" width="340" height="72" rx="16" fill="#2563eb"/>
+    <rect x="0" y="48" width="340" height="24" fill="#2563eb"/>
+    <!-- 姓名 -->
+    <rect x="28" y="104" width="160" height="18" rx="4" fill="#111827"/>
+    <rect x="28" y="132" width="120" height="12" rx="3" fill="#6b7280"/>
+    <!-- 区块标题 -->
+    <rect x="28" y="176" width="80" height="10" rx="2" fill="#2563eb"/>
+    <rect x="28" y="200" width="284" height="8" rx="2" fill="#d1d5db"/>
+    <rect x="28" y="216" width="260" height="8" rx="2" fill="#d1d5db"/>
+    <rect x="28" y="232" width="240" height="8" rx="2" fill="#d1d5db"/>
+    <!-- 第二区块 -->
+    <rect x="28" y="276" width="80" height="10" rx="2" fill="#2563eb"/>
+    <rect x="28" y="300" width="284" height="8" rx="2" fill="#d1d5db"/>
+    <rect x="28" y="316" width="260" height="8" rx="2" fill="#d1d5db"/>
+    <rect x="28" y="332" width="200" height="8" rx="2" fill="#d1d5db"/>
+    <!-- 技能标签 -->
+    <rect x="28" y="376" width="56" height="20" rx="10" fill="#eff6ff"/>
+    <rect x="96" y="376" width="56" height="20" rx="10" fill="#eff6ff"/>
+    <rect x="164" y="376" width="56" height="20" rx="10" fill="#eff6ff"/>
+    <rect x="232" y="376" width="56" height="20" rx="10" fill="#eff6ff"/>
+  </g>
+
+  <!-- 左侧文字 -->
+  <g fill="#ffffff">
+    <!-- Logo / 标题 -->
+    <text x="80" y="180" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="64" font-weight="800" letter-spacing="-0.03em">Résumé Studio</text>
+    <!-- 副标题 -->
+    <text x="80" y="238" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="28" font-weight="500" fill="#bfdbfe">开源、本地优先的简历编辑器</text>
+    <!-- 卖点 -->
+    <g font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="20" fill="#dbeafe">
+      <text x="80" y="320">点字即改 · 实时预览 · 一键导出 PDF</text>
+      <text x="80" y="358">数据只存在你的浏览器，不上传服务器</text>
+    </g>
+    <!-- 按钮样式提示 -->
+    <rect x="80" y="420" width="180" height="48" rx="24" fill="#ffffff"/>
+    <text x="170" y="451" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="18" font-weight="600" fill="#2563eb">免费在线体验</text>
+  </g>
+
+  <!-- 底部小字 -->
+  <text x="80" y="580" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="14" fill="#93c5fd">github.com/jingyu525/resume</text>
+</svg>
