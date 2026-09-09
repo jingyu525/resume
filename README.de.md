@@ -38,6 +38,8 @@ Wir speichern keine deiner Daten. Kein Backend, kein Konto, keine Uploads — sc
 
 Diese Seite nutzt GoatCounter für anonyme, cookie-freie Zugriffsstatistiken — es werden keine personenbezogenen Daten erhoben.
 
+Feedback oder einen Fehler gefunden? Nutze den Feedback-Button im Editor (oben rechts), um ein vorbefülltes GitHub-Issue zu öffnen — kein Konto nötig.
+
 ## Schnellstart (Lokale Entwicklung)
 
 ```bash

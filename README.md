@@ -38,6 +38,8 @@ We store none of your data. No backend, no account, no uploads — close the tab
 
 This site uses GoatCounter for anonymous, cookie-free visit statistics — no personal data is collected.
 
+Have feedback or found a bug? Tap the feedback button in the editor (top-right) to open a pre-filled GitHub issue — no account needed.
+
 ## Quick Start (Local Dev)
 
 ```bash
