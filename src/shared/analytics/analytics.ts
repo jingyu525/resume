@@ -11,7 +11,7 @@
 const CODE = import.meta.env.VITE_GOATCOUNTER_CODE as string | undefined;
 const SRC =
   (import.meta.env.VITE_GOATCOUNTER_SRC as string | undefined) ||
-  "https://gc.zgo.media/count.js";
+  "https://gc.zgo.at/count.js";
 
 let started = false;
 
