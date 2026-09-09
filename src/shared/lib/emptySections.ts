@@ -10,8 +10,13 @@ export interface EmptySection {
 
 /** 单个章节是否为空（忽略隐藏章节） */
 function sectionEmpty(section: ResumeSection, locale: Locale): boolean {
-  if (section.kind === "skills") {
-    if (section.groups.length === 0) return true;
+  /*
+   * 分组型章节（skills / languages 及未来的插件章节）用 groups 承载内容，
+   * 其余用 items。这里按「实际装了内容的容器」判断，而不是枚举 kind：
+   * shared 层不得依赖插件注册表（规则 A1），而分组型章节又由插件不断扩充，
+   * 只认 skills 会让 languages 这类章节明明填满了仍被判为空（导出前误报）。
+   */
+  if (section.groups.length > 0) {
     return section.groups.every(
       (g) => localizedText(g.name, locale).trim() === "" && localizedText(g.items, locale).trim() === "",
     );

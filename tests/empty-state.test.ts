@@ -2,8 +2,9 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { bootstrapPlugins } from "@/plugins/bootstrap";
 import { createEmptyResume, createSampleResume } from "@/plugins/resume-template";
 import { detectEmptiness } from "@/features/empty-state/detect";
+import { detectEmptySections } from "@/shared/lib/emptySections";
 import { DEFAULT_LOCALE } from "@/entities/locale";
-import type { ResumeData } from "@/entities/resume/model";
+import type { ResumeData, ResumeSection } from "@/entities/resume/model";
 
 beforeAll(() => bootstrapPlugins());
 
@@ -45,5 +46,38 @@ describe("detectEmptiness 区分三种空", () => {
     const r = detectEmptiness(resume, locale);
     expect(r.kind).toBe("missing-plugin");
     if (r.kind === "missing-plugin") expect(r.titles.length).toBeGreaterThan(0);
+  });
+});
+
+describe("detectEmptySections 按实际内容容器判空", () => {
+  const withLanguages = (groups: ResumeSection["groups"]): ResumeData => {
+    const base = createEmptyResume();
+    const languages: ResumeSection = {
+      id: "sec_lang",
+      kind: "languages",
+      title: { zh: "语言", en: "Languages" },
+      visible: true,
+      order: base.sections.length,
+      items: [],
+      groups,
+    };
+    return { ...base, sections: [...base.sections, languages] };
+  };
+
+  it("分组型章节填了 groups 不算空（languages 不能按 items 判空）", () => {
+    const resume = withLanguages([
+      { id: "grp_1", name: { zh: "中文", en: "Chinese" }, items: { zh: "母语", en: "Native" } },
+    ]);
+    expect(detectEmptySections(resume, locale).map((e) => e.kind)).not.toContain("languages");
+  });
+
+  it("分组型章节没有任何分组仍算空", () => {
+    const resume = withLanguages([]);
+    expect(detectEmptySections(resume, locale).map((e) => e.kind)).toContain("languages");
+  });
+
+  it("分组型章节分组名为空仍算空", () => {
+    const resume = withLanguages([{ id: "grp_1", name: {}, items: {} }]);
+    expect(detectEmptySections(resume, locale).map((e) => e.kind)).toContain("languages");
   });
 });
