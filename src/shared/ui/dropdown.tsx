@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { cn } from "@/shared/lib/cn";
+import { useDismiss } from "./use-dismiss";
 
 export interface DropdownItem {
   label: string;
@@ -19,21 +20,7 @@ export function DropdownMenu({ trigger, items, align = "end", className }: Dropd
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
+  useDismiss(ref, open, () => setOpen(false));
 
   return (
     <div ref={ref} className={cn("relative", className)}>

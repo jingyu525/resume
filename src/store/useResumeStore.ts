@@ -56,6 +56,12 @@ interface ResumeState {
     itemId: string,
     patch: { startDate?: string; endDate?: string; current?: boolean; showDate?: boolean },
   ) => void;
+  /**
+   * 日期字段的显示开关。show=false（删除字段）时一并清空起止时间，
+   * 保证再次添加得到干净空白字段、而不是上一次的旧值。
+   * 这条不变量被预览弹层与左面板共用，故下沉到 store 而不是各写一遍。
+   */
+  setItemShowDate: (sectionId: string, itemId: string, show: boolean) => void;
   updateItemDesc: (
     sectionId: string,
     itemId: string,
@@ -255,6 +261,20 @@ export const useResumeStore = create<ResumeState>()(
           resume: mapSection(s.resume, sectionId, (sec) => ({
             ...sec,
             items: sec.items.map((it) => (it.id === itemId ? { ...it, ...patch } : it)),
+          })),
+        })),
+
+      setItemShowDate: (sectionId, itemId, show) =>
+        set((s) => ({
+          resume: mapSection(s.resume, sectionId, (sec) => ({
+            ...sec,
+            items: sec.items.map((it) =>
+              it.id === itemId
+                ? show
+                  ? { ...it, showDate: true }
+                  : { ...it, showDate: false, startDate: "", endDate: "", current: false }
+                : it,
+            ),
           })),
         })),
 

@@ -80,4 +80,33 @@ describe("detectEmptySections 按实际内容容器判空", () => {
     const resume = withLanguages([{ id: "grp_1", name: {}, items: {} }]);
     expect(detectEmptySections(resume, locale).map((e) => e.kind)).toContain("languages");
   });
+
+  it("不按 kind 判空：summary 只填了 title 也算有内容（title 会被渲染出来）", () => {
+    const base = createEmptyResume();
+    const summary = base.sections.find((s) => s.kind === "summary");
+    expect(summary).toBeDefined();
+    if (!summary) return;
+    const resume: ResumeData = {
+      ...base,
+      sections: base.sections.map((s) =>
+        s.id === summary.id
+          ? {
+              ...s,
+              items: [
+                {
+                  id: "it_1",
+                  title: { zh: "个人简述", en: "Profile" },
+                  subtitle: {},
+                  description: {},
+                  startDate: "",
+                  endDate: "",
+                  current: false,
+                },
+              ],
+            }
+          : s,
+      ),
+    };
+    expect(detectEmptySections(resume, locale).map((e) => e.kind)).not.toContain("summary");
+  });
 });

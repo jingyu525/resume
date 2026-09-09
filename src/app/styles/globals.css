@@ -264,10 +264,14 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /*
- * 导出 PDF（pdf-generate）用 html2canvas 对 .print-area 逐页截图，
- * 只套用屏幕样式、不会套用下面的 @media print，因此「上纸要收掉」的编辑提示
- * 必须在这里就隐藏，否则占位文案会被原样截进 PDF。
- * .print-area 是离屏的常驻导出副本（屏幕预览不带该类），在此隐藏不影响编辑体验。
+ * 「不上纸」的编辑器提示有两条出口，必须成对维护：
+ *   1) 导出 PDF（pdf-generate）：html2canvas 对 .print-area 逐页截图，
+ *      只套用屏幕样式、不会套用下面的 @media print，所以要在这里先收掉，
+ *      否则占位文案会被原样截进 PDF。.print-area 是离屏的常驻导出副本
+ *      （屏幕预览不带该类），在此隐藏不影响编辑体验。→ 本段两条规则
+ *   2) 浏览器打印：走下方 @media print 内的 .no-print / .rs-contact .rs-empty。
+ *      → @media print 内的同名规则
+ * 新增或调整「不上纸」选择器时，请同步这两处，只改一处会让导出与打印结果不一致。
  */
 .print-area .no-print {
   display: none !important;
@@ -390,6 +394,7 @@ a {
     break-after: auto;
     page-break-after: auto;
   }
+  /* 出口 2：浏览器打印。与上方「.print-area .no-print」成对维护（PDF 导出走那一条） */
   .no-print {
     display: none !important;
   }

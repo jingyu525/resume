@@ -24,7 +24,12 @@ function sectionEmpty(section: ResumeSection, locale: Locale): boolean {
   // summary / experience / project / education 均以 items 承载内容
   if (section.items.length === 0) return true;
   return section.items.every((it) => {
-    if (section.kind === "summary") return isRichEmpty(localizedText(it.description, locale));
+    /*
+     * 不区分 kind：任一段文字可渲染即算有内容。
+     * 原先这里对 summary 只看 description，但 summary 的 hasHeader=false 且
+     * showHeader = hasHeader || Boolean(title)——只填了 title 的 summary 实际
+     * 会把标题渲染出来，判它为空与「是否有内容可出片」的目标相反。
+     */
     return (
       localizedText(it.title, locale).trim() === "" &&
       localizedText(it.subtitle, locale).trim() === "" &&
