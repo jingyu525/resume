@@ -41,3 +41,26 @@ export function trackPageview(): void {
   if (!CODE) return;
   window.goatcounter?.count();
 }
+
+/**
+ * 记录一个自定义事件（用于转化漏斗 / 功能使用统计）。未配置时静默跳过。
+ * 仅用粗粒度分类名（如 "export:pdf-generate" / "template_switch"），
+ * 切勿传入用户输入或报错原文——既保隐私，也避免高基数污染看板。
+ */
+export function trackEvent(name: string): void {
+  if (!CODE) return;
+  window.goatcounter?.count({ event: true, path: name });
+}
+
+/**
+ * 全局错误遥测：捕获未处理的 JS 错误与未兑现的 Promise rejection，
+ * 上报粗粒度分类（error:js / error:promise），不传报错原文或堆栈。
+ * 与 initAnalytics 一致：未配置 code 时不绑定任何监听、零副作用。
+ */
+export function initErrorTracking(): void {
+  if (!CODE || typeof window === "undefined") return;
+  const report = (kind: string) =>
+    window.goatcounter?.count({ event: true, path: `error:${kind}` });
+  window.addEventListener("error", () => report("js"));
+  window.addEventListener("unhandledrejection", () => report("promise"));
+}

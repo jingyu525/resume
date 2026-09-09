@@ -175,6 +175,8 @@ export const dictionaries: Record<Locale, Dict> = {
     "role.pm": "产品经理",
     "role.design": "UI 设计师",
     "common.close": "关闭",
+    "feedback.label": "反馈",
+    "feedback.thanks": "感谢反馈，已为你打开 GitHub 反馈页。",
   },
   en: {
     "nav.brand": "Résumé Studio",
@@ -348,6 +350,8 @@ export const dictionaries: Record<Locale, Dict> = {
     "role.pm": "Product Manager",
     "role.design": "UI Designer",
     "common.close": "Close",
+    "feedback.label": "Feedback",
+    "feedback.thanks": "Thanks! Opening GitHub feedback…",
   },
   ja: {
     "nav.brand": "Résumé Studio",
@@ -521,6 +525,8 @@ export const dictionaries: Record<Locale, Dict> = {
     "role.pm": "プロダクトマネージャー",
     "role.design": "UI デザイナー",
     "common.close": "閉じる",
+    "feedback.label": "フィードバック",
+    "feedback.thanks": "GitHub のフィードバックページを開きます。",
   },
   de: {
     "nav.brand": "Résumé Studio",
@@ -694,6 +700,8 @@ export const dictionaries: Record<Locale, Dict> = {
     "role.pm": "Produktmanager",
     "role.design": "UI-Designer",
     "common.close": "Schließen",
+    "feedback.label": "Feedback",
+    "feedback.thanks": "Danke! GitHub-Feedback wird geöffnet…",
   },
   ko: {
     "nav.brand": "Résumé Studio",
@@ -867,5 +875,7 @@ export const dictionaries: Record<Locale, Dict> = {
     "role.pm": "프로덕트 매니저",
     "role.design": "UI 디자이너",
     "common.close": "닫기",
+    "feedback.label": "피드백",
+    "feedback.thanks": "감사합니다! GitHub 피드백 페이지를 엽니다.",
   },
 };

@@ -6,6 +6,7 @@ import { UndoRedoButtons } from "@/features/undo-redo/UndoRedo";
 import { LanguageSwitcher } from "@/features/language-switch/LanguageSwitcher";
 import { MoreMenu } from "@/widgets/editor-toolbar/MoreMenu";
 import { ExportMenu } from "./ExportMenu";
+import { FeedbackButton } from "@/widgets/feedback/FeedbackButton";
 import { exportBackup } from "@/features/backup-io/backup";
 import { useToast } from "@/shared/ui/toast";
 import { ACCENT_COLORS } from "@/shared/config/presets";
@@ -72,6 +73,7 @@ export function EditorToolbar({
         >
           <DatabaseBackup size={18} />
         </IconButton>
+        <FeedbackButton />
         <MoreMenu />
         <ExportMenu />
         <span className="sr-only">{locale}</span>

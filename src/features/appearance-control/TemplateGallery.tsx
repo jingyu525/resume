@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
 import { useI18n } from "@/shared/i18n";
+import { trackEvent } from "@/shared/analytics/analytics";
 import { resolveResumeTheme } from "@/shared/config/presets";
 import { applyThemePreset } from "@/shared/lib/themePreset";
 import { listThemes } from "@/plugins/core/registry";
@@ -38,7 +39,10 @@ export function TemplateGallery() {
           <button
             key={th.id}
             type="button"
-            onClick={() => applyTheme(th.id)}
+            onClick={() => {
+              applyTheme(th.id);
+              trackEvent(`template:${th.id}`);
+            }}
             aria-pressed={picked}
             className={cn(
               "relative rounded-lg border p-1.5 text-left transition-all",

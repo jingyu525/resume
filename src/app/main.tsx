@@ -6,13 +6,15 @@ import "@/app/styles/globals.css";
 import { App } from "@/app/App";
 import { useResumeStore, hydrateFromPersisted } from "@/store/useResumeStore";
 import { hydrateFromStorage } from "@/store/persistence";
-import { initAnalytics } from "@/shared/analytics/analytics";
+import { initAnalytics, initErrorTracking } from "@/shared/analytics/analytics";
 
 // 本地存储恢复：必须在插件注册之后（第一个 import 已保证），详见 hydrateFromPersisted 注释
 hydrateFromPersisted();
 
 // 隐私优先埋点：未配置 VITE_GOATCOUNTER_CODE 时不加载、零外部请求
 initAnalytics();
+// 全局错误遥测：未配置时零副作用（与埋点一致）
+initErrorTracking();
 
 // 异步存储插件（无 loadSync）启动后回填一次；本地插件会直接跳过。
 void hydrateFromStorage((resume, appearance) =>

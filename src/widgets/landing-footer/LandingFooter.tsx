@@ -2,9 +2,10 @@ import { useNavigate } from "react-router-dom";
 import { useI18n } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { ArrowRight, ShieldCheck } from "lucide-react";
+import { openFeedback } from "@/widgets/feedback/openFeedback";
 
 export function LandingFooter() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const nav = useNavigate();
   return (
     <footer className="border-t border-border bg-secondary/30">
@@ -19,6 +20,11 @@ export function LandingFooter() {
           <ShieldCheck size={16} className="mt-0.5 shrink-0 text-primary" />
           <span>{t("footer.privacy")}</span>
         </p>
+        <div className="mt-4">
+          <Button variant="ghost" size="sm" onClick={() => openFeedback(locale, "/")}>
+            {t("feedback.label")}
+          </Button>
+        </div>
       </div>
     </footer>
   );

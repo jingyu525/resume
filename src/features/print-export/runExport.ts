@@ -3,18 +3,26 @@ import { getDefaultExporter } from "@/plugins/core/registry";
 import type { ExporterPlugin } from "@/plugins/core/types";
 import { getDictionaries } from "@/plugins/core/dict";
 import { translate } from "@/shared/i18n";
+import { trackEvent } from "@/shared/analytics/analytics";
 
 /** 执行任意导出插件（M4：导出器可插拔，UI 暴露全部注册的导出器）。 */
-export function runExport(exporter: ExporterPlugin): void {
+export async function runExport(exporter: ExporterPlugin): Promise<void> {
   if (!exporter) return;
   const { resume, appearance, locale } = useResumeStore.getState();
   const dicts = getDictionaries();
-  void exporter.run({
-    resume,
-    appearance,
-    locale,
-    t: (key, params) => translate(locale, key, params, dicts),
-  });
+  try {
+    await exporter.run({
+      resume,
+      appearance,
+      locale,
+      t: (key, params) => translate(locale, key, params, dicts),
+    });
+    // 导出成功：按导出器 id 区分格式（如 export:pdf-generate），便于看各格式使用率
+    trackEvent(`export:${exporter.id}`);
+  } catch {
+    // 导出失败：粗粒度上报，便于发现线上异常（不暴露报错细节）
+    trackEvent("error:export");
+  }
 }
 
 /**

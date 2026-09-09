@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useRef } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ToastProvider } from "@/shared/ui/toast";
 import { trackPageview } from "@/shared/analytics/analytics";
+import { ErrorBoundary } from "@/shared/analytics/ErrorBoundary";
 import { I18nProvider } from "./providers/I18nProvider";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { useAutoSave } from "@/features/persistence/useAutoSave";
@@ -49,12 +50,14 @@ export function App() {
           <AutoSaveGate />
           <BrowserRouter basename="/resume/">
             <AnalyticsTracker />
-            <Suspense fallback={<RouteFallback />}>
-              <Routes>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/editor" element={<EditorPage />} />
-              </Routes>
-            </Suspense>
+            <ErrorBoundary>
+              <Suspense fallback={<RouteFallback />}>
+                <Routes>
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/editor" element={<EditorPage />} />
+                </Routes>
+              </Suspense>
+            </ErrorBoundary>
           </BrowserRouter>
         </I18nProvider>
       </ToastProvider>
