@@ -3,6 +3,7 @@ import { useI18n } from "@/shared/i18n";
 import { Button } from "@/shared/ui/button";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { openFeedback } from "@/widgets/feedback/openFeedback";
+import { VoteWidget } from "@/widgets/feedback/VoteWidget";
 
 export function LandingFooter() {
   const { t, locale } = useI18n();
@@ -20,6 +21,9 @@ export function LandingFooter() {
           <ShieldCheck size={16} className="mt-0.5 shrink-0 text-primary" />
           <span>{t("footer.privacy")}</span>
         </p>
+        <div className="mt-6">
+          <VoteWidget />
+        </div>
         <div className="mt-4">
           <Button variant="ghost" size="sm" onClick={() => openFeedback(locale, "/")}>
             {t("feedback.label")}

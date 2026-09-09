@@ -177,6 +177,10 @@ export const dictionaries: Record<Locale, Dict> = {
     "common.close": "关闭",
     "feedback.label": "反馈",
     "feedback.thanks": "感谢反馈，已为你打开 GitHub 反馈页。",
+    "vote.prompt": "这个工具对你有帮助吗？",
+    "vote.up": "有用",
+    "vote.down": "没帮助",
+    "vote.thanks": "感谢你的反馈！",
   },
   en: {
     "nav.brand": "Résumé Studio",
@@ -352,6 +356,10 @@ export const dictionaries: Record<Locale, Dict> = {
     "common.close": "Close",
     "feedback.label": "Feedback",
     "feedback.thanks": "Thanks! Opening GitHub feedback…",
+    "vote.prompt": "Was this tool helpful?",
+    "vote.up": "Yes",
+    "vote.down": "No",
+    "vote.thanks": "Thanks for the feedback!",
   },
   ja: {
     "nav.brand": "Résumé Studio",
@@ -527,6 +535,10 @@ export const dictionaries: Record<Locale, Dict> = {
     "common.close": "閉じる",
     "feedback.label": "フィードバック",
     "feedback.thanks": "GitHub のフィードバックページを開きます。",
+    "vote.prompt": "このツールは役に立ちましたか？",
+    "vote.up": "役立った",
+    "vote.down": "役立たない",
+    "vote.thanks": "フィードバックありがとうございます！",
   },
   de: {
     "nav.brand": "Résumé Studio",
@@ -702,6 +714,10 @@ export const dictionaries: Record<Locale, Dict> = {
     "common.close": "Schließen",
     "feedback.label": "Feedback",
     "feedback.thanks": "Danke! GitHub-Feedback wird geöffnet…",
+    "vote.prompt": "War dieses Tool hilfreich?",
+    "vote.up": "Ja",
+    "vote.down": "Nein",
+    "vote.thanks": "Danke für das Feedback!",
   },
   ko: {
     "nav.brand": "Résumé Studio",
@@ -877,5 +893,9 @@ export const dictionaries: Record<Locale, Dict> = {
     "common.close": "닫기",
     "feedback.label": "피드백",
     "feedback.thanks": "감사합니다! GitHub 피드백 페이지를 엽니다.",
+    "vote.prompt": "이 도구가 도움이 되었나요?",
+    "vote.up": "도움됨",
+    "vote.down": "도움없음",
+    "vote.thanks": "피드백 감사합니다!",
   },
 };
