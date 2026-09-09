@@ -36,6 +36,8 @@ No install needed, open and use: **https://jingyu525.github.io/resume/**
 
 We store none of your data. No backend, no account, no uploads — close the tab and it goes with you, clear the cache and it disappears. That is also what fundamentally sets it apart from most SaaS résumé tools.
 
+This site uses GoatCounter for anonymous, cookie-free visit statistics — no personal data is collected.
+
 ## Quick Start (Local Dev)
 
 ```bash

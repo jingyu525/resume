@@ -36,6 +36,8 @@ Keine Installation nötig, einfach öffnen: **https://jingyu525.github.io/resume
 
 Wir speichern keine deiner Daten. Kein Backend, kein Konto, keine Uploads — schließe den Tab und nimm es mit, leere den Cache und es verschwindet. Das ist auch der grundlegende Unterschied zu den meisten SaaS-Lebenslauf-Tools.
 
+Diese Seite nutzt GoatCounter für anonyme, cookie-freie Zugriffsstatistiken — es werden keine personenbezogenen Daten erhoben.
+
 ## Schnellstart (Lokale Entwicklung)
 
 ```bash
