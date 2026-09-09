@@ -40,6 +40,7 @@ export function EditableField({
   editable = true,
 }: EditableFieldProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const composingRef = useRef(false);
   const [toolbar, setToolbar] = useState<ToolbarState>({ visible: false, top: 0, left: 0 });
   const { t } = useI18n();
 
@@ -74,7 +75,22 @@ export function EditableField({
     onChange(cleaned);
   };
 
-  const onInput = () => {
+  // IME 合成期间（中文/日文输入法）浏览器会持续触发 input，且 DOM 处于中间态
+  // （如拼音未上屏）。此时若 emit 提交，会把半成品写入 store；
+  // 合成结束再 emit 一次即可拿到完整文本。用 ref 守卫而非 state，避免重渲染。
+  const onCompositionStart = () => {
+    composingRef.current = true;
+  };
+  const onCompositionEnd = () => {
+    composingRef.current = false;
+    emit();
+  };
+
+  const onInput = (e?: React.FormEvent<HTMLDivElement>) => {
+    if (composingRef.current) return;
+    // 双保险：个别浏览器在合成中不触发 composition 事件，但 input 带 isComposing 标记
+    const native = e?.nativeEvent as InputEvent | undefined;
+    if (native?.isComposing) return;
     window.clearTimeout((ref.current as unknown as { _t?: number })?._t);
     (ref.current as unknown as { _t?: number })._t = window.setTimeout(emit, 300);
   };
@@ -148,6 +164,8 @@ export function EditableField({
         data-placeholder={placeholder}
         onInput={onInput}
         onPaste={onPaste}
+        onCompositionStart={onCompositionStart}
+        onCompositionEnd={onCompositionEnd}
         onMouseUp={updateToolbar}
         onKeyUp={updateToolbar}
         onBlur={() => setToolbar((s) => ({ ...s, visible: false }))}

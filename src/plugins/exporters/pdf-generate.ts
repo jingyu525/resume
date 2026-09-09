@@ -20,9 +20,9 @@ async function generatePdfBlob(): Promise<Blob | null> {
   const pages = Array.from(document.querySelectorAll<HTMLElement>(".print-area"));
   if (pages.length === 0) return null;
 
-  // 等字体就绪，避免字形/分页错位
+  // 等字体就绪，避免字形/分页错位；字体加载失败也不阻塞导出（兜底，绝不白屏）
   if (typeof document !== "undefined" && document.fonts?.ready) {
-    await document.fonts.ready;
+    await document.fonts.ready.catch(() => {});
   }
 
   // 仅在用户点击导出时动态加载（代码分割 + 不拖累首屏/测试）

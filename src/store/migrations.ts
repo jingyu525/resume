@@ -117,6 +117,8 @@ function normalizeSection(s: unknown, index: number): ResumeSection | null {
     title: (o.title as Record<Locale, string>) ?? {},
     visible: o.visible !== false,
     order: typeof o.order === "number" ? o.order : index,
+    // 保留插件扩展字段：v2 数据不可在归一化中丢失（FR-9 升级不丢数据）
+    fields: (o.fields as Record<string, unknown>) ?? {},
     items: items.map((it, i) => normalizeItem(it, i)).filter(Boolean) as never,
     groups: groups.map((g, i) => normalizeGroup(g, i)).filter(Boolean) as never,
   };
@@ -169,37 +171,38 @@ export function validateBackup(raw: unknown): raw is PersistedState {
 }
 
 function sanitizeLocales(resume: unknown) {
-  const r = resume as { basics?: Record<string, Record<string, string>>; sections?: unknown[] };
+  const r = resume as { basics?: Record<string, unknown>; sections?: unknown[] };
   // 按"已注册语言"过滤：固定 LOCALES 会把新装语言包写入的内容删掉（M3 必须用注册表）
   const known = knownLocales();
-  const scrub = (obj: Record<string, Record<string, string>> | undefined) => {
-    if (!obj) return;
-    for (const key of Object.keys(obj)) {
-      const f = obj[key];
-      if (f && typeof f === "object") {
-        for (const l of Object.keys(f)) {
-          if (!known.includes(l)) delete f[l];
-        }
-      }
+  // 以下字段均以「语言」为键（Localized）：逐键剔除未注册语言
+  const scrubLocale = (rec: Record<string, unknown> | undefined) => {
+    if (!rec || typeof rec !== "object") return;
+    for (const l of Object.keys(rec)) {
+      if (!known.includes(l)) delete rec[l];
     }
   };
-  scrub(r.basics);
+  if (r.basics && typeof r.basics === "object") {
+    const b = r.basics as Record<string, unknown>;
+    scrubLocale(b.name as Record<string, unknown>);
+    scrubLocale(b.title as Record<string, unknown>);
+    scrubLocale(b.city as Record<string, unknown>);
+  }
   (r.sections ?? []).forEach((sec) => {
     if (!sec || typeof sec !== "object") return;
     const s = sec as Record<string, unknown>;
-    scrub(s.title as Record<string, Record<string, string>>);
+    scrubLocale(s.title as Record<string, unknown>);
     (Array.isArray(s.items) ? s.items : []).forEach((it) => {
       if (!it || typeof it !== "object") return;
       const i = it as Record<string, unknown>;
-      scrub(i.title as Record<string, Record<string, string>>);
-      scrub(i.subtitle as Record<string, Record<string, string>>);
-      scrub(i.description as Record<string, Record<string, string>>);
+      scrubLocale(i.title as Record<string, unknown>);
+      scrubLocale(i.subtitle as Record<string, unknown>);
+      scrubLocale(i.description as Record<string, unknown>);
     });
     (Array.isArray(s.groups) ? s.groups : []).forEach((g) => {
       if (!g || typeof g !== "object") return;
       const gr = g as Record<string, unknown>;
-      scrub(gr.name as Record<string, Record<string, string>>);
-      scrub(gr.items as Record<string, Record<string, string>>);
+      scrubLocale(gr.name as Record<string, unknown>);
+      scrubLocale(gr.items as Record<string, unknown>);
     });
   });
 }
