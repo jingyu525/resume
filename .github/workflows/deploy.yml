@@ -36,6 +36,11 @@ jobs:
           VITE_GOATCOUNTER_CODE: ${{ vars.VITE_GOATCOUNTER_CODE || '' }}
           VITE_GOATCOUNTER_SRC: ${{ vars.VITE_GOATCOUNTER_SRC || 'https://gc.zgo.at/count.js' }}
 
+      # SPA 深链回退：GitHub Pages 无服务端重写，直接打开 /resume/editor 会 404。
+      # 把 index.html 复制为 404.html，让未知路径也返回 SPA 外壳，由前端路由接管。
+      - name: SPA fallback (deep-link 404 fix)
+        run: cp dist/index.html dist/404.html
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
