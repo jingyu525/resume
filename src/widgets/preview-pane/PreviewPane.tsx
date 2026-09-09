@@ -53,7 +53,7 @@ export function PreviewPane({ coach = false }: { coach?: boolean }) {
 
   return (
     <div className="relative h-full">
-      <div ref={wrapRef} className="h-full overflow-auto bg-secondary/40 p-4">
+      <div ref={wrapRef} className="h-full overflow-auto bg-zinc-200 p-4 dark:bg-zinc-900">
         <div
           className="mx-auto"
           style={{ width: box.w * scale, height: box.h * scale }}

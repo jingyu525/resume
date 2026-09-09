@@ -31,8 +31,8 @@ export function pageMarginMm(density: number): number {
   return Math.round(12 + clamp01(density) * 10);
 }
 
-/** 底栏保护区（mm），避免正文贴底 */
-export const SAFE_ZONE_MM = 10;
+/** 底栏保护区（mm），避免正文贴底；略大于顶部边距以留出底部呼吸空间 */
+export const SAFE_ZONE_MM = 16;
 
 function clamp01(v: number): number {
   return Math.min(1, Math.max(0, v));

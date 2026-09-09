@@ -5,6 +5,7 @@ import { resolveResumeTheme } from "@/shared/config/presets";
 import { applyThemePreset } from "@/shared/lib/themePreset";
 import { listThemes } from "@/plugins/core/registry";
 import { cn } from "@/shared/lib/cn";
+import { Check } from "lucide-react";
 
 /**
  * 模板选择器：每个模板用「套用之后」的真实外观渲染缩略图。
@@ -40,14 +41,24 @@ export function TemplateGallery() {
             onClick={() => applyTheme(th.id)}
             aria-pressed={picked}
             className={cn(
-              "rounded-lg border p-1.5 text-left transition-colors",
-              picked ? "border-primary bg-primary/10" : "border-border hover:bg-secondary",
+              "relative rounded-lg border p-1.5 text-left transition-all",
+              picked
+                ? "border-primary bg-primary/10 ring-2 ring-primary/50"
+                : "border-border hover:bg-secondary hover:border-foreground/20",
             )}
           >
             <TemplateThumb vars={vars} sidebar={preview.layout === "sidebar"} />
             <div className={cn("mt-1.5 px-0.5 text-xs font-medium", picked && "text-primary")}>
               {t(th.labelKey)}
             </div>
+            {picked && (
+              <span
+                className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow"
+                aria-hidden
+              >
+                <Check size={13} strokeWidth={3} />
+              </span>
+            )}
           </button>
         );
       })}

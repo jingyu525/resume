@@ -4,7 +4,7 @@ import { ACCENT_COLORS, LAYOUTS, TONES } from "@/shared/config/presets";
 import { cn } from "@/shared/lib/cn";
 import { Slider } from "@/shared/ui/slider";
 import { Button } from "@/shared/ui/button";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Check } from "lucide-react";
 import { TemplateGallery } from "./TemplateGallery";
 
 /** 外观四直觉维度：主色 / 版式 / 气质 / 疏密（FR-5），系统将直觉轴翻译为版面数值 */
@@ -15,7 +15,7 @@ export function AppearancePanel() {
   const resetAppearance = useResumeStore((s) => s.resetAppearance);
 
   return (
-    <div className="space-y-5 p-4">
+    <div className="space-y-6 p-5">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">{t("appearance.title")}</h3>
         <Button variant="ghost" size="sm" onClick={resetAppearance}>
@@ -28,7 +28,7 @@ export function AppearancePanel() {
         <TemplateGallery />
       </Field>
 
-      <div className="border-t pt-4">
+      <div className="border-t pt-5">
         <div className="mb-3 text-xs font-medium text-muted-foreground">{t("appearance.fineTune")}</div>
 
         <Field label={t("appearance.layout")}>
@@ -52,23 +52,29 @@ export function AppearancePanel() {
         </Field>
 
         <Field label={t("appearance.accent")}>
-          <div className="flex flex-wrap gap-2">
-            {ACCENT_COLORS.map((c) => (
-              <button
-                key={c.value}
-                type="button"
-                aria-label={c.label}
-                title={c.label}
-                onClick={() => setAppearance({ accent: c.value })}
-                className={cn(
-                  "h-7 w-7 rounded-full border-2 transition-transform",
-                  appearance.accent === c.value
-                    ? "border-foreground scale-110"
-                    : "border-transparent hover:scale-105",
-                )}
-                style={{ backgroundColor: c.value }}
-              />
-            ))}
+          <div className="flex flex-wrap gap-2.5">
+            {ACCENT_COLORS.map((c) => {
+              const picked = appearance.accent === c.value;
+              return (
+                <button
+                  key={c.value}
+                  type="button"
+                  aria-label={c.label}
+                  aria-pressed={picked}
+                  title={c.label}
+                  onClick={() => setAppearance({ accent: c.value })}
+                  className={cn(
+                    "grid h-7 w-7 place-items-center rounded-full border-2 transition-all",
+                    picked
+                      ? "border-transparent ring-2 ring-offset-2 ring-foreground scale-110"
+                      : "border-transparent hover:scale-105 hover:ring-1 hover:ring-border",
+                  )}
+                  style={{ backgroundColor: c.value }}
+                >
+                  {picked && <Check size={14} strokeWidth={3} className="text-white drop-shadow" />}
+                </button>
+              );
+            })}
           </div>
         </Field>
 
@@ -93,14 +99,16 @@ export function AppearancePanel() {
         </Field>
 
         <Field label={t("appearance.density")}>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground">{t("appearance.density.compact")}</span>
+          <div>
             <Slider
               value={appearance.density}
               onChange={(v) => setAppearance({ density: v })}
               aria-label={t("appearance.density")}
             />
-            <span className="text-xs text-muted-foreground">{t("appearance.density.spacious")}</span>
+            <div className="mt-1.5 flex items-center justify-between text-xs text-muted-foreground">
+              <span>{t("appearance.density.compact")}</span>
+              <span>{t("appearance.density.spacious")}</span>
+            </div>
           </div>
         </Field>
       </div>

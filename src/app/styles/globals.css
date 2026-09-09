@@ -103,6 +103,17 @@ body {
   background: #fff;
   color: #111;
   box-sizing: border-box;
+  /* 纸张立体感：屏幕预览下浮起，与背景拉开层次，像一张纸 */
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 2px;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.08),
+    0 10px 30px rgba(15, 23, 42, 0.14);
+}
+/* 导出 / 落地页副本：保持纯白纸，不带入屏幕投影 */
+.a4-page.print-area {
+  border-radius: 0;
+  box-shadow: none;
 }
 
 /* ====== 简历文档（预览 / 打印共用，单一真源渲染） ====== */
@@ -116,6 +127,32 @@ body {
 }
 .rs-em {
   color: var(--rs-accent);
+}
+
+/* 滑块：加高轨道、放大圆点，移动端手指更易拖动（原生 range 命中区偏小） */
+input[type="range"] {
+  height: 12px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -3px;
+  border-radius: 9999px;
+  background: hsl(var(--primary));
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: hsl(var(--primary));
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
 }
 .rs-name {
   font-family: var(--rs-heading-font);
@@ -325,6 +362,11 @@ a {
   /* 测量层是 absolute 定位的隐藏层，留着会多打空白页 */
   .rs-paginated > [aria-hidden="true"] {
     display: none !important;
+  }
+  /* 屏幕投影在纸上无意义，去掉 */
+  .a4-page {
+    box-shadow: none !important;
+    border: none !important;
   }
   /* 一页一纸；最后一页后面不加空白页 */
   .a4-page.print-area {

@@ -34,11 +34,11 @@ export function EditPanel() {
   const emptiness = useMemo(() => detectEmptiness(resume, locale), [resume, locale]);
 
   return (
-    <div className="space-y-6 p-4">
+    <div className="space-y-8 p-5">
       <EmptyStateNotice state={emptiness} />
       <section>
-        <h3 className="mb-3 text-sm font-semibold">{t("edit.basic")}</h3>
-        <div className="grid grid-cols-2 gap-2">
+        <h3 className="mb-4 text-sm font-semibold">{t("edit.basic")}</h3>
+        <div className="grid grid-cols-2 gap-3">
           <Field label={t("edit.name")}>
             <LocalizedField
               field={basics.name}
@@ -84,7 +84,7 @@ export function EditPanel() {
       </section>
 
       <section>
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-between">
           <h3 className="text-sm font-semibold">{t("edit.sections")}</h3>
           <DropdownMenu
             align="end"
@@ -99,7 +99,7 @@ export function EditPanel() {
             }))}
           />
         </div>
-        <div className="space-y-3">
+        <div className="space-y-4">
           {ordered.map((sec, i) => (
             <SectionCard
               key={sec.id}
@@ -148,13 +148,13 @@ function SectionCard({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border bg-card p-3",
+        "rounded-xl border border-border bg-card p-4",
         drag.isDragging(index) && "opacity-50",
         drag.isOver(index) && "border-primary ring-2 ring-primary/40",
       )}
       {...drag.rowProps(index)}
     >
-      <div className="mb-2 flex items-center gap-1.5">
+      <div className="mb-3 flex items-center gap-1.5">
         <IconButton
           label={t("edit.drag")}
           size="sm"
@@ -201,7 +201,7 @@ function SectionCard({
           <Trash2 size={15} />
         </IconButton>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-3">
         {plugin ? (
           plugin.renderEditor({ section, locale, t })
         ) : (
