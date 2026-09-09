@@ -67,7 +67,8 @@ export const BUILTIN_PLUGINS: Plugin[] = [
   cityField,
   wechatField,
   websiteField,
-  // 导出：默认「导出 PDF 文件」(pdf-generate)；Markdown 为 M4 示范导出器（证明导出器可插件安装）
+  // 导出：默认「导出 PDF 文件」(pdf-generate，一键保存、干净无页脚)；
+  // Markdown 为 M4 示范导出器（证明导出器可插件安装）
   markdownExporter,
   pdfGenerateExporter,
   // 存储：本地优先定位下只内置本地存储。

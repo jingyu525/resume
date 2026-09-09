@@ -102,7 +102,7 @@ UI 文案由 `shared/i18n/dictionaries` 五语（中/英/日/德/韩）字典驱
 全程无后端、无账号、无上传。
 
 ### 5.7 打印导出（FR-8）
-`print-export` 调用系统打印（`window.print()`）；`globals.css` 的 `@page A4` 与 `.print-area`/`.no-print` 规则保证仅输出 A4 矢量文字，屏幕专属元素不上纸。
+`print-export` 调用默认导出器（pdf-generate，一键导出 PDF 文件）；`globals.css` 的 `@page A4` 与 `.print-area`/`.no-print` 规则保证仅输出 A4 页面，屏幕专属元素不上纸。
 
 ## 6. 安全约束落实（NFR-3）
 - 富文本唯一清洗入口在 `shared/lib/sanitize`，全应用统一调用。
