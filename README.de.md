@@ -1,4 +1,4 @@
-[中文](./README.md) · [English](./README.en.md) · [日本語](./README.ja.md) · [Deutsch](./README.de.md) · [한국어](./README.ko.md)
+[中文](./README.zh.md) · [English](./README.md) · [日本語](./README.ja.md) · [Deutsch](./README.de.md) · [한국어](./README.ko.md)
 
 # Résumé Studio · Ein lokal-firstes Studio für Lebenslauf-Satz
 
