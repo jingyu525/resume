@@ -1,3 +1,5 @@
+[中文](./README.md) · [English](./README.en.md) · [日本語](./README.ja.md) · [Deutsch](./README.de.md) · [한국어](./README.ko.md)
+
 # Résumé Studio · 本地优先的简历排版工作室
 
 > 没有设计基础，也能把简历做成"苹果专业文档级"的作品。所见即所得、A4 精确分页、五语同源。
