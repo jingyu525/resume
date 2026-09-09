@@ -9,7 +9,7 @@
 [![本地优先](https://img.shields.io/badge/privacy-无上传%20·%20无账号-22c55e?style=for-the-badge)]()
 [![开源透明](https://img.shields.io/badge/open--source-代码公开-6b7280?style=for-the-badge)]()
 
-![Résumé Studio 预览](./public/og-cover.png)
+![Résumé Studio 预览](./public/og-cover.zh.png)
 
 ## 为什么是 Résumé Studio
 

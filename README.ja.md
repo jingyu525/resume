@@ -9,7 +9,7 @@
 [![Local-First](https://img.shields.io/badge/privacy-local--first-22c55e?style=for-the-badge)]()
 [![Open Source](https://img.shields.io/badge/open--source-source--available-6b7280?style=for-the-badge)]()
 
-![Résumé Studio プレビュー](./public/og-cover.png)
+![Résumé Studio プレビュー](./public/og-cover.ja.png)
 
 ## なぜ Résumé Studio なのか
 
