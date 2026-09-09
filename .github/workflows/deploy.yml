@@ -28,13 +28,13 @@ jobs:
       - run: npm ci
 
       # 埋点为可选项：在仓库 Settings → Secrets and variables → Variables 中
-      # 设置 VITE_PLAUSIBLE_DOMAIN（及可选 VITE_PLAUSIBLE_SRC）才会开启；
+      # 设置 VITE_GOATCOUNTER_CODE（及可选 VITE_GOATCOUNTER_SRC）才会开启；
       # 未设置则构建产物默认零外部请求。
       - name: Build
         run: npm run build
         env:
-          VITE_PLAUSIBLE_DOMAIN: ${{ vars.VITE_PLAUSIBLE_DOMAIN || '' }}
-          VITE_PLAUSIBLE_SRC: ${{ vars.VITE_PLAUSIBLE_SRC || 'https://plausible.io/js/script.js' }}
+          VITE_GOATCOUNTER_CODE: ${{ vars.VITE_GOATCOUNTER_CODE || '' }}
+          VITE_GOATCOUNTER_SRC: ${{ vars.VITE_GOATCOUNTER_SRC || 'https://gc.zgo.media/count.js' }}
 
       - uses: actions/configure-pages@v5
 

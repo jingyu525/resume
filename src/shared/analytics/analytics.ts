@@ -1,41 +1,43 @@
-// 隐私优先的轻量埋点（Plausible）。
+// 隐私优先的轻量埋点（GoatCounter）。
 //
 // 设计原则（与「本地优先 / 不碰你的数据」定位一致）：
-// - 默认完全关闭：构建时未设置 VITE_PLAUSIBLE_DOMAIN 时，不加载任何脚本、不发起任何网络请求。
-// - 开启后采用 Plausible：无 cookie、不收集个人身份信息、GDPR 友好；
-//   可指向自建 Plausible 实例（VITE_PLAUSIBLE_SRC），数据不出自有域名。
-// - 纯前端 SPA：首屏由 Plausible 脚本自动记录，路由切换由 trackPageview() 触发。
+// - 免费、无 cookie、不收集个人身份信息，适合新手与隐私定位。
+// - 默认完全关闭：构建时未设置 VITE_GOATCOUNTER_CODE 时，不加载任何脚本、零外部请求。
+// - 用法：① 在 https://www.goatcounter.com 注册并创建站点，得到 code（如 resume-studio）；
+//        ② 构建时设置 VITE_GOATCOUNTER_CODE=resume-studio（仓库 Variables）；③ 重新部署即可。
 //
-// 用法：入口调用 initAnalytics()；SPA 路由切换调用 trackPageview()。
+// 首屏页面浏览由 GoatCounter 脚本自动记录；SPA 路由切换由 trackPageview() 触发。
 
-const DOMAIN = import.meta.env.VITE_PLAUSIBLE_DOMAIN as string | undefined;
+const CODE = import.meta.env.VITE_GOATCOUNTER_CODE as string | undefined;
 const SRC =
-  (import.meta.env.VITE_PLAUSIBLE_SRC as string | undefined) ||
-  "https://plausible.io/js/script.js";
+  (import.meta.env.VITE_GOATCOUNTER_SRC as string | undefined) ||
+  "https://gc.zgo.media/count.js";
 
 let started = false;
 
 declare global {
   interface Window {
-    plausible?: (event: string, options?: { props?: Record<string, string> }) => void;
+    goatcounter?: {
+      count: (opts?: { path?: string; title?: string; event?: boolean }) => void;
+      [key: string]: unknown;
+    };
   }
 }
 
-/** 加载埋点脚本（仅当配置了域名）。幂等，多次调用安全。 */
+/** 加载埋点脚本（仅当配置了 code）。幂等，多次调用安全。 */
 export function initAnalytics(): void {
-  if (started || !DOMAIN) return;
+  if (started || !CODE) return;
   started = true;
 
   const script = document.createElement("script");
   script.async = true;
-  script.defer = true;
   script.src = SRC;
-  script.setAttribute("data-domain", DOMAIN);
+  script.dataset.goatcounter = `https://${CODE}.goatcounter.com/count`;
   document.head.appendChild(script);
 }
 
 /** 记录一次页面浏览（用于 SPA 路由切换）。未配置时静默跳过。 */
 export function trackPageview(): void {
-  if (!DOMAIN) return;
-  window.plausible?.("pageview");
+  if (!CODE) return;
+  window.goatcounter?.count();
 }

@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect } from "react";
+import { Suspense, lazy, useEffect, useRef } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ToastProvider } from "@/shared/ui/toast";
 import { trackPageview } from "@/shared/analytics/analytics";
@@ -18,10 +18,16 @@ function AutoSaveGate() {
   return null;
 }
 
-// SPA 路由切换时上报页面浏览（埋点默认关闭，无域名时不发起请求）
+// SPA 路由切换时上报页面浏览（埋点默认关闭，无 code 时不发起请求）
 function AnalyticsTracker() {
   const location = useLocation();
+  const first = useRef(true);
   useEffect(() => {
+    // 首屏由 GoatCounter 脚本自动记录，这里跳过一次以免重复计数
+    if (first.current) {
+      first.current = false;
+      return;
+    }
     trackPageview();
   }, [location.pathname]);
   return null;
