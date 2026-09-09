@@ -35,6 +35,8 @@ export interface ResumeItem {
   endDate: string;
   /** 是否"至今" */
   current: boolean;
+  /** 是否在条目中显示日期字段；undefined 视为 true（兼容旧数据 / 默认显示） */
+  showDate?: boolean;
   /** 描述（富文本） */
   description: Localized<RichText>;
   /** 条目级插件扩展字段（v2 起，未安装插件时数据仍保留） */

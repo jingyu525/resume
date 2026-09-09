@@ -54,7 +54,7 @@ interface ResumeState {
   updateItemDate: (
     sectionId: string,
     itemId: string,
-    patch: { startDate?: string; endDate?: string; current?: boolean },
+    patch: { startDate?: string; endDate?: string; current?: boolean; showDate?: boolean },
   ) => void;
   updateItemDesc: (
     sectionId: string,

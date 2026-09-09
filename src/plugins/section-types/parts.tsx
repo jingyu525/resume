@@ -4,6 +4,7 @@
  * 放在插件层而非 features：章节插件要自带渲染与编辑能力，而插件不得反向依赖
  * features（否则 features → plugins → features 成环）。这些组件只依赖 shared 与 store。
  */
+import { useEffect, useRef, useState } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
 import { useI18n } from "@/shared/i18n";
 import { localizedSource, localizedText } from "@/shared/lib/localized";
@@ -82,7 +83,6 @@ export function ItemBlockView({
   const updateLocalized = useResumeStore((s) => s.updateItemLocalized);
   const updateDesc = useResumeStore((s) => s.updateItemDesc);
 
-  const date = formatPeriod(item.startDate, item.endDate, item.current, locale);
   const showHeader = hasHeader || Boolean(localizedText(item.title, locale));
 
   return (
@@ -107,7 +107,7 @@ export function ItemBlockView({
               onChange={(v) => updateLocalized(sectionId, item.id, "subtitle", locale, v)}
             />
           </div>
-          {date && <div className="rs-item-date">{date}</div>}
+          <ItemDateEditor item={item} sectionId={sectionId} locale={locale} />
         </div>
       )}
       <div className="rs-desc">
@@ -119,6 +119,128 @@ export function ItemBlockView({
           onChange={(v) => updateDesc(sectionId, item.id, locale, v)}
         />
       </div>
+    </div>
+  );
+}
+
+/**
+ * 预览区日期：点击弹出起止时间编辑（与左面板共用同一套结构化字段
+ * startDate/endDate/current）。
+ *
+ * 日期是可选字段：可整体删除（showDate=false），删除后该条目在预览与保存的
+ * PDF 中都不显示任何日期；空值占位是编辑提示，带 no-print 不会上纸。
+ */
+function ItemDateEditor({
+  item,
+  sectionId,
+  locale,
+}: {
+  item: ResumeItem;
+  sectionId: string;
+  locale: Locale;
+}) {
+  const { t } = useI18n();
+  const updateDate = useResumeStore((s) => s.updateItemDate);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const showDate = item.showDate !== false;
+  const date = formatPeriod(item.startDate, item.endDate, item.current, locale);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  // 字段已删除：仅编辑器内显示「添加日期」回复按钮（no-print，不上纸）
+  if (!showDate) {
+    return (
+      <button
+        type="button"
+        onClick={() => updateDate(sectionId, item.id, { showDate: true })}
+        className="no-print rs-item-date cursor-pointer rounded px-1 text-muted-foreground italic hover:bg-foreground/5"
+        aria-label={t("edit.datePlaceholder")}
+        title={t("edit.datePlaceholder")}
+      >
+        {t("edit.datePlaceholder")}
+      </button>
+    );
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label={t("edit.datePlaceholder")}
+        title={date || t("edit.datePlaceholder")}
+        className={cn(
+          "rs-item-date cursor-pointer rounded px-1 hover:bg-foreground/5",
+          // 空值占位是编辑提示，必须 no-print，否则会印到 PDF
+          !date && "no-print text-muted-foreground italic",
+        )}
+      >
+        {date || t("edit.datePlaceholder")}
+      </button>
+      {open && (
+        <div className="no-print absolute right-0 z-50 mt-1 w-60 rounded-xl border border-border bg-popover p-3 shadow-xl">
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">{t("edit.startDate")}</label>
+            <Input
+              type="month"
+              className="h-8"
+              value={item.startDate}
+              onChange={(e) => updateDate(sectionId, item.id, { startDate: e.target.value })}
+            />
+          </div>
+          <div className="mt-2 space-y-1">
+            <label className="text-xs text-muted-foreground">{t("edit.endDate")}</label>
+            <Input
+              type="month"
+              className="h-8"
+              value={item.endDate}
+              disabled={item.current}
+              onChange={(e) => updateDate(sectionId, item.id, { endDate: e.target.value })}
+            />
+          </div>
+          <label className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+            <Switch
+              checked={item.current}
+              onChange={(v) => updateDate(sectionId, item.id, { current: v })}
+            />
+            {t("edit.current")}
+          </label>
+          <div className="mt-3 border-t border-border pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                // 删除字段时一并清空起止时间：再次添加是干净的空白字段，而非上一次的旧值
+                updateDate(sectionId, item.id, {
+                  showDate: false,
+                  startDate: "",
+                  endDate: "",
+                  current: false,
+                });
+                setOpen(false);
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-destructive transition-colors hover:bg-destructive/10"
+            >
+              <Trash2 size={14} />
+              {t("edit.deleteDate")}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -263,6 +263,19 @@ input[type="range"]::-moz-range-thumb {
   pointer-events: none;
 }
 
+/*
+ * 导出 PDF（pdf-generate）用 html2canvas 对 .print-area 逐页截图，
+ * 只套用屏幕样式、不会套用下面的 @media print，因此「上纸要收掉」的编辑提示
+ * 必须在这里就隐藏，否则占位文案会被原样截进 PDF。
+ * .print-area 是离屏的常驻导出副本（屏幕预览不带该类），在此隐藏不影响编辑体验。
+ */
+.print-area .no-print {
+  display: none !important;
+}
+.print-area [contenteditable][data-placeholder]:empty:before {
+  content: "" !important;
+}
+
 /* 打印：仅输出 A4 内容，隐藏屏幕专属元素 */
 /* ====== i18n 文本长度安全：不同语言文本长短不一，避免溢出压住相邻元素 ====== */
 /* 交互元素默认可收缩，避免长译文把同行元素挤出或重叠 */
