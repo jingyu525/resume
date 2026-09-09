@@ -5,12 +5,12 @@
  * features（否则 features → plugins → features 成环）。这些组件只依赖 shared 与 store。
  */
 import { useRef, useState } from "react";
-import { useResumeStore } from "@/store/useResumeStore";
 import { useI18n } from "@/shared/i18n";
 import { localizedText } from "@/shared/lib/localized";
 import { formatPeriod } from "@/shared/lib/format";
 import type { Locale } from "@/entities/locale";
 import type { ResumeItem, SkillGroup } from "@/entities/resume/model";
+import type { SectionBlockEditors } from "@/plugins/core/types";
 import { EditableField } from "@/shared/ui/editable-field";
 import { useDismiss } from "@/shared/ui/use-dismiss";
 import { DateRangeFields } from "./parts-fields";
@@ -23,15 +23,18 @@ export function ItemBlockView({
   sectionId,
   locale,
   hasHeader,
+  editors,
 }: {
   item: ResumeItem;
   sectionId: string;
   locale: Locale;
   hasHeader: boolean;
+  editors?: SectionBlockEditors;
 }) {
   const { t } = useI18n();
-  const updateLocalized = useResumeStore((s) => s.updateItemLocalized);
-  const updateDesc = useResumeStore((s) => s.updateItemDesc);
+  // 未注入 editors（如落地页示例）即只读：绝不回落到直接读 store，
+  // 否则示例简历会把内容写进用户的真实简历。
+  const canEdit = !!editors;
 
   const showHeader = hasHeader || Boolean(localizedText(item.title, locale));
 
@@ -41,32 +44,35 @@ export function ItemBlockView({
         <div className="rs-item-head">
           <div>
             <EditableField
+              editable={canEdit}
               ariaLabel={t("edit.itemTitlePlaceholder")}
               html={localizedText(item.title, locale)}
               placeholder={t("edit.itemTitlePlaceholder")}
               multiline={false}
               className="rs-item-title"
-              onChange={(v) => updateLocalized(sectionId, item.id, "title", locale, v)}
+              onChange={(v) => editors?.updateItemLocalized(sectionId, item.id, "title", locale, v)}
             />
             <EditableField
+              editable={canEdit}
               ariaLabel={t("edit.itemSubtitlePlaceholder")}
               html={localizedText(item.subtitle, locale)}
               placeholder={t("edit.itemSubtitlePlaceholder")}
               multiline={false}
               className="rs-item-sub"
-              onChange={(v) => updateLocalized(sectionId, item.id, "subtitle", locale, v)}
+              onChange={(v) => editors?.updateItemLocalized(sectionId, item.id, "subtitle", locale, v)}
             />
           </div>
-          <ItemDateEditor item={item} sectionId={sectionId} locale={locale} />
+          <ItemDateEditor item={item} sectionId={sectionId} locale={locale} editors={editors} />
         </div>
       )}
       <div className="rs-desc">
         <EditableField
+          editable={canEdit}
           ariaLabel={t("edit.summaryPlaceholder")}
           html={localizedText(item.description, locale)}
           placeholder={t("edit.summaryPlaceholder")}
           rich
-          onChange={(v) => updateDesc(sectionId, item.id, locale, v)}
+          onChange={(v) => editors?.updateItemDesc(sectionId, item.id, locale, v)}
         />
       </div>
     </div>
@@ -84,14 +90,14 @@ function ItemDateEditor({
   item,
   sectionId,
   locale,
+  editors,
 }: {
   item: ResumeItem;
   sectionId: string;
   locale: Locale;
+  editors?: SectionBlockEditors;
 }) {
   const { t } = useI18n();
-  const updateDate = useResumeStore((s) => s.updateItemDate);
-  const setShowDate = useResumeStore((s) => s.setItemShowDate);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const showDate = item.showDate !== false;
@@ -99,12 +105,17 @@ function ItemDateEditor({
 
   useDismiss(ref, open, () => setOpen(false));
 
+  // 只读（未注入 editors，如落地页示例）：有日期就当普通文本出片，没有就不占位
+  if (!editors) {
+    return date ? <div className="rs-item-date">{date}</div> : null;
+  }
+
   // 字段已删除：仅编辑器内显示「添加日期」回复按钮（no-print，不上纸）
   if (!showDate) {
     return (
       <button
         type="button"
-        onClick={() => setShowDate(sectionId, item.id, true)}
+        onClick={() => editors.setItemShowDate(sectionId, item.id, true)}
         className="no-print rs-item-date cursor-pointer rounded px-1 text-muted-foreground italic hover:bg-foreground/5"
         aria-label={t("edit.addDate")}
         title={t("edit.addDate")}
@@ -135,13 +146,13 @@ function ItemDateEditor({
             startDate={item.startDate}
             endDate={item.endDate}
             current={item.current}
-            onChange={(patch) => updateDate(sectionId, item.id, patch)}
+            onChange={(patch) => editors.updateItemDate(sectionId, item.id, patch)}
           />
           <div className="mt-3 border-t border-border pt-2">
             <button
               type="button"
               onClick={() => {
-                setShowDate(sectionId, item.id, false);
+                editors.setItemShowDate(sectionId, item.id, false);
                 setOpen(false);
               }}
               className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-destructive transition-colors hover:bg-destructive/10"
@@ -161,32 +172,35 @@ export function SkillGroupBlockView({
   group,
   sectionId,
   locale,
+  editors,
 }: {
   group: SkillGroup;
   sectionId: string;
   locale: Locale;
+  editors?: SectionBlockEditors;
 }) {
   const { t } = useI18n();
-  const updateName = useResumeStore((s) => s.updateGroupName);
-  const updateItems = useResumeStore((s) => s.updateGroupItems);
+  const canEdit = !!editors;
 
   return (
     <div className="rs-skill-group">
       <EditableField
+        editable={canEdit}
         ariaLabel={t("edit.groupNamePlaceholder")}
         html={localizedText(group.name, locale)}
         placeholder={t("edit.groupNamePlaceholder")}
         multiline={false}
         className="rs-skill-name"
-        onChange={(v) => updateName(sectionId, group.id, locale, v)}
+        onChange={(v) => editors?.updateGroupName(sectionId, group.id, locale, v)}
       />
       <div className="rs-skill-items">
         <EditableField
+          editable={canEdit}
           ariaLabel={t("edit.skillItemPlaceholder")}
           html={localizedText(group.items, locale)}
           placeholder={t("edit.skillItemPlaceholder")}
           multiline
-          onChange={(v) => updateItems(sectionId, group.id, locale, v)}
+          onChange={(v) => editors?.updateGroupItems(sectionId, group.id, locale, v)}
         />
       </div>
     </div>

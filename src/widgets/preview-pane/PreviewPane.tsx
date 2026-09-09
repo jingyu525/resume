@@ -15,6 +15,13 @@ export function PreviewPane({ coach = false }: { coach?: boolean }) {
   const updateBasicLocalized = useResumeStore((s) => s.updateBasicLocalized);
   const updateBasicPlain = useResumeStore((s) => s.updateBasicPlain);
   const renameSection = useResumeStore((s) => s.renameSection);
+  // 条目 / 分组级就地编辑：注入后预览区（renderBlock）即可编辑；落地页不注入即只读
+  const updateItemLocalized = useResumeStore((s) => s.updateItemLocalized);
+  const updateItemDesc = useResumeStore((s) => s.updateItemDesc);
+  const updateItemDate = useResumeStore((s) => s.updateItemDate);
+  const setItemShowDate = useResumeStore((s) => s.setItemShowDate);
+  const updateGroupName = useResumeStore((s) => s.updateGroupName);
+  const updateGroupItems = useResumeStore((s) => s.updateGroupItems);
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -64,7 +71,17 @@ export function PreviewPane({ coach = false }: { coach?: boolean }) {
               locale={locale}
               appearance={appearance}
               onTotalPages={setPages}
-              editors={{ updateBasicLocalized, updateBasicPlain, renameSection }}
+              editors={{
+                updateBasicLocalized,
+                updateBasicPlain,
+                renameSection,
+                updateItemLocalized,
+                updateItemDesc,
+                updateItemDate,
+                setItemShowDate,
+                updateGroupName,
+                updateGroupItems,
+              }}
               printSource={false}
             />
           </div>

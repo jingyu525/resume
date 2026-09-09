@@ -26,6 +26,14 @@ src/plugins/
 | kind | 关键字段 | 校验规则 |
 | --- | --- | --- |
 | `section-type` | `sectionKind` / `defaultTitle`（五语） / `fields` / `placement` / `toBlocks` / `renderBlock` / `renderEditor` | C4、C5 |
+
+### `renderBlock` 与只读降级（规则 A1/A4/G5）
+
+- 签名：`renderBlock(block, locale, editors?: SectionBlockEditors): ReactNode`。第三个参数**可选**。
+- `SectionBlockEditors` 携带条目 / 分组级的写回能力（`updateItemLocalized` / `updateItemDesc` / `updateItemDate` / `setItemShowDate` / `updateGroupName` / `updateGroupItems`）。
+- **未收到 `editors` 时，渲染块必须降级为只读**（如落地页的示例简历）：绝不能直接 `useResumeStore` 写回，否则用户在示例里点一下会把内容写进自己的真实简历。渲染组件应优先使用注入的 `editors`，缺失时 `EditableField` 传 `editable={false}`、日期按钮不可点。
+- `editors` 由 `features/pagination/BlockView` 注入（`BlockEditors` 同时包含 `updateBasicLocalized` / `updateBasicPlain` / `renameSection`），落地页走同一条渲染管线但不传 `editors`。
+- `renderBlock` 内部**禁止按 `block.sectionKind` 做硬编码分支**（规则 G5）：有差异的渲染应放进插件自身。
 | `locale-pack` | `code`（BCP-47） / `label` / `fallback?`；`dict` 翻译核心键、不要求五语齐备 | C3、C8 |
 | `basics-field` | `fieldKey` / `inputType` / `order` / `localized` / `icon?` | — |
 | `exporter` | `run(ctx)`；最多一个 `default: true` | C7 |

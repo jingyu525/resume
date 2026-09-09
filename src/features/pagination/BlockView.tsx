@@ -5,6 +5,7 @@ import { readBasicField } from "@/shared/lib/basics";
 import { useI18n } from "@/shared/i18n";
 import { cn } from "@/shared/lib/cn";
 import { listBasicsFields, getSectionType } from "@/plugins/core/registry";
+import type { SectionBlockEditors } from "@/plugins/core/types";
 import type { Block } from "./buildBlocks";
 import { EditableField } from "@/shared/ui/editable-field";
 
@@ -18,7 +19,7 @@ type BasicPlainField = "phone" | "email" | "wechat" | "website";
  * 把「写回」从组件里剥离，让 BlockView 只依赖传入的 resume 数据，
  * 既能在编辑器里就地编辑（预览即编辑器），又能在落地页安全展示示例而不碰全局 store。
  */
-export interface BlockEditors {
+export interface BlockEditors extends SectionBlockEditors {
   updateBasicLocalized: (field: BasicLocalizedField, locale: Locale, value: string) => void;
   updateBasicPlain: (field: BasicPlainField, value: string) => void;
   renameSection: (id: string, locale: Locale, value: string) => void;
@@ -43,8 +44,9 @@ export function BlockView({
     case "item":
     case "skill-group": {
       // 渲染器由产出该块的章节类型插件提供；缺插件时返回 null（数据由 migrate 保留，不渲染以免错版）
+      // editors 透传给插件：编辑器注入后即可就地编辑，落地页不传则只读
       const plugin = block.sectionKind ? getSectionType(block.sectionKind) : undefined;
-      return plugin ? plugin.renderBlock(block, locale) : null;
+      return plugin ? plugin.renderBlock(block, locale, editors) : null;
     }
     default:
       return null;

@@ -35,9 +35,9 @@ export const languagesSection: SectionTypePlugin = {
     }));
     return [head, ...groups];
   },
-  renderBlock: (block, locale) =>
+  renderBlock: (block, locale, editors) =>
     block.type === "skill-group" ? (
-      <SkillGroupBlockView group={block.group} sectionId={block.sectionId} locale={locale} />
+      <SkillGroupBlockView group={block.group} sectionId={block.sectionId} locale={locale} editors={editors} />
     ) : null,
   renderEditor: ({ section, locale }) => <GroupsSectionEditor section={section} locale={locale} />,
 };

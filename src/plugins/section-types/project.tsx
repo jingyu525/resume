@@ -39,13 +39,14 @@ export const projectSection: SectionTypePlugin = {
     }));
     return [head, ...items];
   },
-  renderBlock: (block, locale) =>
+  renderBlock: (block, locale, editors) =>
     block.type === "item" ? (
       <ItemBlockView
         item={block.item}
         sectionId={block.sectionId}
         locale={locale}
         hasHeader={block.hasHeader}
+        editors={editors}
       />
     ) : null,
   renderEditor: ({ section, locale }) => <ItemsSectionEditor section={section} locale={locale} />,

@@ -48,6 +48,12 @@ describe("BlockView 只读展示（落地页示例场景）", () => {
       updateBasicLocalized: vi.fn(),
       updateBasicPlain: vi.fn(),
       renameSection: vi.fn(),
+      updateItemLocalized: vi.fn(),
+      updateItemDesc: vi.fn(),
+      updateItemDate: vi.fn(),
+      setItemShowDate: vi.fn(),
+      updateGroupName: vi.fn(),
+      updateGroupItems: vi.fn(),
     };
     const { container } = render(
       <BlockView block={head} resume={resume} locale={DEFAULT_LOCALE} editors={editors} />,

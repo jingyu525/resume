@@ -41,7 +41,7 @@ export const certificatesSection: SectionTypePlugin = {
       })),
     ];
   },
-  renderBlock(block, locale) {
+  renderBlock(block, locale, _editors) {
     if (block.type === "section-head") return localizedText({ [locale]: block.title } as never, locale);
     return [block.title, block.subtitle].filter(Boolean).join(" · ");
   },

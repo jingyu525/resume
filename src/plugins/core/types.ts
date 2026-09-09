@@ -64,6 +64,31 @@ export interface SectionEditorProps {
   t: (key: string, params?: Record<string, string | number>) => string;
 }
 
+/**
+ * 预览块的条目 / 分组级编辑回调。
+ *
+ * renderBlock **未收到 editors 时应降级为只读渲染**（如落地页的示例简历），
+ * 绝不直接读 store——否则用户在示例里点一下就会写进自己的真实简历。
+ */
+export interface SectionBlockEditors {
+  updateItemLocalized: (
+    sectionId: string,
+    itemId: string,
+    field: "title" | "subtitle",
+    locale: Locale,
+    value: string,
+  ) => void;
+  updateItemDesc: (sectionId: string, itemId: string, locale: Locale, html: string) => void;
+  updateItemDate: (
+    sectionId: string,
+    itemId: string,
+    patch: { startDate?: string; endDate?: string; current?: boolean; showDate?: boolean },
+  ) => void;
+  setItemShowDate: (sectionId: string, itemId: string, show: boolean) => void;
+  updateGroupName: (sectionId: string, groupId: string, locale: Locale, value: string) => void;
+  updateGroupItems: (sectionId: string, groupId: string, locale: Locale, value: string) => void;
+}
+
 /** 章节类型插件：字段、渲染、编辑、分页切块全部自带（M2 落地） */
 export interface SectionTypePlugin extends PluginBase {
   kind: "section-type";
@@ -80,7 +105,8 @@ export interface SectionTypePlugin extends PluginBase {
   placement: "auto" | "sidebar" | "main";
   /** 产出可测高的原子块；块容器必须保持 flow-root（规则 G2） */
   toBlocks(section: ResumeSection, ctx: BlockContext): Block[];
-  renderBlock(block: Block, locale: Locale): ReactNode;
+  /** editors 缺省即只读（落地页示例）；编辑器页由 BlockView 注入 */
+  renderBlock(block: Block, locale: Locale, editors?: SectionBlockEditors): ReactNode;
   renderEditor(props: SectionEditorProps): ReactNode;
   createItem?(): ResumeItem;
   createSample?(): ResumeSection;
