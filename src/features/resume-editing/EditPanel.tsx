@@ -10,6 +10,7 @@ import { Input } from "@/shared/ui/input";
 import { IconButton } from "@/shared/ui/button";
 import { DropdownMenu } from "@/shared/ui/dropdown";
 import { listBasicsFields, listSectionTypes, getSectionType } from "@/plugins/core/registry";
+import { getAvailableSectionTypes } from "./availableSections";
 import { LocalizedField } from "@/plugins/section-types/parts";
 import { cn } from "@/shared/lib/cn";
 import { useDragReorder } from "@/shared/ui/use-drag-reorder";
@@ -25,6 +26,7 @@ export function EditPanel() {
   const updateLocalized = useResumeStore((s) => s.updateBasicLocalized);
   const updatePlain = useResumeStore((s) => s.updateBasicPlain);
   const addSection = useResumeStore((s) => s.addSection);
+  const availableTypes = getAvailableSectionTypes(listSectionTypes(), sections);
   const reorderSection = useResumeStore((s) => s.reorderSection);
 
   const ordered = [...sections].sort((a, b) => a.order - b.order);
@@ -93,10 +95,14 @@ export function EditPanel() {
                 <Plus size={15} /> {t("edit.addSection")}
               </span>
             }
-            items={listSectionTypes().map((p) => ({
-              label: t(p.labelKey),
-              onClick: () => addSection(p.sectionKind),
-            }))}
+            items={
+              availableTypes.length > 0
+                ? availableTypes.map((p) => ({
+                    label: t(p.labelKey),
+                    onClick: () => addSection(p.sectionKind),
+                  }))
+                : [{ label: t("edit.noMoreSections"), onClick: () => {}, disabled: true }]
+            }
           />
         </div>
         <div className="space-y-4">

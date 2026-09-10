@@ -7,6 +7,7 @@ export interface DropdownItem {
   onClick: () => void;
   icon?: ReactNode;
   danger?: boolean;
+  disabled?: boolean;
 }
 
 export interface DropdownProps {
@@ -48,14 +49,17 @@ export function DropdownMenu({ trigger, items, align = "end", className }: Dropd
               type="button"
               role="menuitem"
               onClick={() => {
+                if (item.disabled) return;
                 setOpen(false);
                 item.onClick();
               }}
+              disabled={item.disabled}
               className={cn(
                 "flex w-full min-w-0 items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors",
                 item.danger
                   ? "text-destructive hover:bg-destructive/10"
                   : "text-popover-foreground hover:bg-secondary",
+                item.disabled && "cursor-not-allowed opacity-50 hover:bg-transparent",
               )}
             >
               {item.icon}
