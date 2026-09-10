@@ -6,6 +6,8 @@ const A4_W_MM = 210;
 const A4_H_MM = 297;
 // 截图倍率：A4 @96dpi ≈ 794px，×2 ≈ 1588px，文字足够清晰且文件体积可控
 const CAPTURE_SCALE = 2;
+/** object URL 延迟回收时间：确保下载/打开已开始 */
+const REVOKE_DELAY_MS = 15000;
 
 async function generatePdfBlob(): Promise<Blob | null> {
   const pages = Array.from(document.querySelectorAll<HTMLElement>(".print-area"));
@@ -43,31 +45,134 @@ async function generatePdfBlob(): Promise<Blob | null> {
   return doc.output("blob");
 }
 
-function saveBlob(blob: Blob, filename: string, iosWin?: Window | null): void {
+/** HTML 转义：文件名来自用户输入，写入文档前必须转义（防 XSS） */
+function escapeHtml(input: string): string {
+  return input.replace(/[&<>"']/g, (c) => {
+    switch (c) {
+      case "&":
+        return "&amp;";
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case '"':
+        return "&quot;";
+      default:
+        return "&#39;";
+    }
+  });
+}
+
+/** blob → data URL。iOS 上另一个 document 解析不了本页创建的 blob URL，data URL 无此限制。 */
+function toDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error ?? new Error("readAsDataURL failed"));
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
+ * 承载 PDF 的页面骨架：用铺满视口的 iframe，而不是顶层导航。
+ *
+ * iOS Safari 会阻止顶层导航到 blob:/data: URL（表现为「跳转到空白页」），
+ * 但把它们作为 iframe 子资源加载是允许的，交由系统 PDF 查看器渲染。
+ */
+function pdfPageHtml(src: string, title: string): string {
+  return (
+    "<!doctype html><html><head>" +
+    '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+    `<title>${escapeHtml(title)}</title>` +
+    "<style>html,body{margin:0;height:100%;background:#fff}" +
+    "iframe{display:block;width:100%;height:100%;border:0}</style>" +
+    "</head><body>" +
+    `<iframe src="${src}" type="application/pdf"></iframe>` +
+    "</body></html>"
+  );
+}
+
+/** 在用户手势内预开的空白页中渲染 PDF */
+function renderInOpenedWindow(win: Window, src: string, title: string): void {
+  win.document.open();
+  win.document.write(pdfPageHtml(src, title));
+  win.document.close();
+}
+
+/**
+ * window.open 被拦截时的兜底：在当前页铺一层覆盖式 iframe。
+ * src 在当前 document 内始终有效（无论 data: 还是 blob:），不受跨窗口限制。
+ */
+function renderOverlay(src: string, title: string, closeLabel: string): void {
+  const overlay = document.createElement("div");
+  overlay.className = "no-print";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-label", title);
+  overlay.style.cssText =
+    "position:fixed;inset:0;z-index:10000;background:#fff;display:flex;flex-direction:column";
+
+  const bar = document.createElement("div");
+  bar.style.cssText =
+    "display:flex;justify-content:flex-end;padding:8px 12px;border-bottom:1px solid #e5e7eb";
+
+  const close = document.createElement("button");
+  close.type = "button";
+  close.textContent = closeLabel;
+  close.setAttribute("aria-label", closeLabel);
+  close.style.cssText =
+    "appearance:none;border:1px solid #d4d4d8;background:#fff;border-radius:6px;" +
+    "padding:6px 12px;font-size:14px;color:#18181b;cursor:pointer";
+  close.addEventListener("click", () => overlay.remove());
+
+  const frame = document.createElement("iframe");
+  frame.src = src;
+  frame.title = title;
+  frame.style.cssText = "flex:1 1 auto;width:100%;border:0;background:#fff";
+
+  bar.appendChild(close);
+  overlay.appendChild(bar);
+  overlay.appendChild(frame);
+  document.body.appendChild(overlay);
+}
+
+/** 非 iOS：直接走 <a download> 下载 */
+function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
-  if (iosWin) {
-    // 已提前在用户手势内开好的新标签，直接导航到生成的 PDF，
-    // 交给系统查看器 → Share → 存到「文件」
-    iosWin.location.href = url;
-  } else if (isIOS()) {
-    // 兜底：直接点锚点（少数情况下 window.open 被禁用）
-    const a = document.createElement("a");
-    a.href = url;
-    a.target = "_blank";
-    a.rel = "noopener";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  } else {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS);
+}
+
+/**
+ * iOS 导出：一律用 iframe 子资源呈现 PDF，绝不顶层导航。
+ * 优先 data URL（无跨 document 限制）；转换失败才回退 blob URL 并延迟回收。
+ */
+async function exportOnIOS(
+  blob: Blob,
+  name: string,
+  win: Window | null,
+  t: ExportContext["t"],
+): Promise<void> {
+  let src: string;
+  let isBlobUrl = false;
+  try {
+    src = await toDataUrl(blob);
+  } catch {
+    src = URL.createObjectURL(blob);
+    isBlobUrl = true;
   }
-  // 延迟回收，确保下载/打开已开始
-  setTimeout(() => URL.revokeObjectURL(url), 15000);
+
+  if (win) {
+    renderInOpenedWindow(win, src, name);
+  } else {
+    renderOverlay(src, name, t("common.close"));
+  }
+  if (isBlobUrl) setTimeout(() => URL.revokeObjectURL(src), REVOKE_DELAY_MS);
 }
 
 /**
@@ -82,16 +187,21 @@ export const pdfGenerateExporter: ExporterPlugin = {
   labelKey: "export.pdfFile",
   version: 1,
   default: true,
-  async run({ resume, locale }: ExportContext) {
+  async run({ resume, locale, t }: ExportContext) {
+    const isIos = isIOS();
     // iOS Safari 的弹窗拦截依赖「用户手势」：异步生成完成后 window.open 会失效，
-    // 因此必须在点击事件的手势窗口内先开一个空白新标签，稍后把 PDF 导航进去。
-    const iosWin = isIOS() ? window.open("", "_blank", "noopener") : null;
+    // 因此必须在点击事件的手势窗口内先开一个空白新标签，稍后把 PDF 写进去。
+    const iosWin = isIos ? window.open("", "_blank", "noopener") : null;
     const name = localizedText(resume.basics.name, locale) || "resume";
     const blob = await generatePdfBlob();
     if (!blob) {
       iosWin?.close();
       return;
     }
-    saveBlob(blob, `${name}.pdf`, iosWin);
+    if (isIos) {
+      await exportOnIOS(blob, name, iosWin, t);
+      return;
+    }
+    downloadBlob(blob, `${name}.pdf`);
   },
 };

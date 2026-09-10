@@ -80,6 +80,8 @@ describe("pdf-generate 导出边界", () => {
     revokeObjUrl.mockRestore();
     anchorClick.mockRestore();
     document.querySelectorAll(".print-area").forEach((el) => el.remove());
+    // 兜底覆盖层挂在 body 上，需清理避免污染后续用例
+    document.querySelectorAll('[role="dialog"]').forEach((el) => el.remove());
     // 还原 UA
     Object.defineProperty(navigator, "userAgent", {
       configurable: true,
@@ -122,6 +124,68 @@ describe("pdf-generate 导出边界", () => {
     await pdfGenerateExporter.run(makeCtx());
     // iOS 分支应调用 window.open
     expect(openSpy).toHaveBeenCalled();
+  });
+
+  it("iOS：用 iframe 渲染 PDF，绝不顶层导航（修复「跳转空白页」）", async () => {
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      value: "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)",
+    });
+    const write = vi.fn();
+    const fakeWin = {
+      document: { open: vi.fn(), write, close: vi.fn() },
+      location: { href: "" },
+      close: vi.fn(),
+    };
+    openSpy.mockReturnValue(fakeWin as unknown as Window);
+
+    addPrintAreas(1);
+    await pdfGenerateExporter.run(makeCtx());
+
+    // 核心：不得顶层导航到 blob:/data: URL——Safari 会阻止，表现为跳转到空白页
+    expect(fakeWin.location.href).toBe("");
+    // 改为把 PDF 作为 iframe 子资源写进预开的空白页
+    expect(write).toHaveBeenCalled();
+    const html = String(write.mock.calls[0][0]);
+    expect(html).toContain("<iframe");
+  });
+
+  it("iOS 且 window.open 被拦截：退回当前页覆盖层兜底", async () => {
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      value: "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)",
+    });
+    // openSpy 默认返回 null，即 window.open 被拦截
+    addPrintAreas(1);
+    await pdfGenerateExporter.run(makeCtx());
+
+    const overlay = document.querySelector('[role="dialog"]');
+    expect(overlay).not.toBeNull();
+    expect(overlay?.querySelector("iframe")).not.toBeNull();
+  });
+
+  it("文件名含 HTML 特殊字符时被转义（防 XSS）", async () => {
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      value: "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)",
+    });
+    const write = vi.fn();
+    const fakeWin = {
+      document: { open: vi.fn(), write, close: vi.fn() },
+      location: { href: "" },
+      close: vi.fn(),
+    };
+    openSpy.mockReturnValue(fakeWin as unknown as Window);
+
+    const resume = createEmptyResume();
+    resume.basics.name = { zh: '<img src=x onerror="alert(1)">' };
+    addPrintAreas(1);
+    await pdfGenerateExporter.run(makeCtx(resume));
+
+    const html = String(write.mock.calls[0][0]);
+    // 原始标签不得原样进入文档
+    expect(html).not.toContain("<img");
+    expect(html).toContain("&lt;img");
   });
 
   it("字体加载失败（fonts.ready reject）仍成功出图，不抛错", async () => {
