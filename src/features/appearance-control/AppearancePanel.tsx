@@ -4,8 +4,14 @@ import { ACCENT_COLORS, LAYOUTS, TONES } from "@/shared/config/presets";
 import { cn } from "@/shared/lib/cn";
 import { Slider } from "@/shared/ui/slider";
 import { Button } from "@/shared/ui/button";
-import { RotateCcw, Check } from "lucide-react";
+import { RotateCcw, Check, Monitor, Sun, Moon } from "lucide-react";
 import { TemplateGallery } from "./TemplateGallery";
+
+const MODES = [
+  { value: "light" as const, labelKey: "appearance.mode.light", icon: Sun },
+  { value: "dark" as const, labelKey: "appearance.mode.dark", icon: Moon },
+  { value: "system" as const, labelKey: "appearance.mode.system", icon: Monitor },
+] as const;
 
 /** 外观四直觉维度：主色 / 版式 / 气质 / 疏密（FR-5），系统将直觉轴翻译为版面数值 */
 export function AppearancePanel() {
@@ -26,6 +32,31 @@ export function AppearancePanel() {
 
       <Field label={t("theme.title")}>
         <TemplateGallery />
+      </Field>
+
+      <Field label={t("appearance.mode")}>
+        <div className="grid grid-cols-3 gap-2">
+          {MODES.map((m) => {
+            const Icon = m.icon;
+            const picked = appearance.mode === m.value;
+            return (
+              <button
+                key={m.value}
+                type="button"
+                onClick={() => setAppearance({ mode: m.value })}
+                className={cn(
+                  "flex items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-sm transition-colors",
+                  picked
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:bg-secondary",
+                )}
+              >
+                <Icon size={15} />
+                {t(m.labelKey)}
+              </button>
+            );
+          })}
+        </div>
       </Field>
 
       <div className="border-t pt-5">

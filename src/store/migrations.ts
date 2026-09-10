@@ -74,6 +74,11 @@ function normalizeAppearance(
         : fallback.density,
     // theme：旧备份无此字段时退化为默认 classic（M6 主题可插件安装，绝不因缺字段崩溃）
     theme: typeof o.theme === "string" && o.theme ? o.theme : fallback.theme,
+    // mode：light/dark/system 三者之一，否则退化为默认 system（旧备份无该字段也安全）
+    mode:
+      o.mode === "light" || o.mode === "dark" || o.mode === "system"
+        ? o.mode
+        : fallback.mode,
   };
 }
 

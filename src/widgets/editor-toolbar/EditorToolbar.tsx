@@ -11,7 +11,7 @@ import { exportBackup } from "@/features/backup-io/backup";
 import { useToast } from "@/shared/ui/toast";
 import { ACCENT_COLORS } from "@/shared/config/presets";
 import { cn } from "@/shared/lib/cn";
-import { FileText, Palette, DatabaseBackup } from "lucide-react";
+import { FileText, Palette, DatabaseBackup, Sun, Moon } from "lucide-react";
 
 export function EditorToolbar({
   onToggleAppearance,
@@ -23,6 +23,8 @@ export function EditorToolbar({
   const appearance = useResumeStore((s) => s.appearance);
   const setAppearance = useResumeStore((s) => s.setAppearance);
   const locale = useResumeStore((s) => s.locale);
+  const mode = appearance.mode;
+  const isDark = mode === "dark" || (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
   return (
     <header className="relative z-50 flex h-14 items-center gap-2 border-b border-border bg-background/80 px-3 backdrop-blur-xl">
@@ -58,6 +60,13 @@ export function EditorToolbar({
       <div className="ml-auto flex shrink-0 items-center gap-1">
         <IconButton label={t("appearance.title")} onClick={onToggleAppearance}>
           <Palette size={18} />
+        </IconButton>
+        <IconButton
+          label={t("appearance.mode")}
+          title={`${t("appearance.mode")}: ${t(`appearance.mode.${mode}`)}`}
+          onClick={() => setAppearance({ mode: isDark ? "light" : "dark" })}
+        >
+          {isDark ? <Sun size={18} /> : <Moon size={18} />}
         </IconButton>
         <LanguageSwitcher showLabel={false} />
         {/*

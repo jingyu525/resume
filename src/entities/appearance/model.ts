@@ -13,6 +13,8 @@ export interface AppearancePref {
   density: number;
   /** 主题：注册表里的 ThemePlugin id（M6 起可插件安装，默认 classic） */
   theme: string;
+  /** 明暗模式：light 浅色 / dark 深色 / system 跟随系统（FR-1，默认跟随系统） */
+  mode: "light" | "dark" | "system";
 }
 
 /** 主题级风格预设：选主题时一键套用的完整外观基线（FR-5 风格优先）。 */
@@ -29,4 +31,5 @@ export const DEFAULT_APPEARANCE: AppearancePref = {
   tone: "formal",
   density: 0.5,
   theme: "classic",
+  mode: "system",
 };
