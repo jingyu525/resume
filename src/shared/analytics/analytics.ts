@@ -8,6 +8,8 @@
 //
 // 首屏页面浏览由 GoatCounter 脚本自动记录；SPA 路由切换由 trackPageview() 触发。
 
+import { platformTag } from "../lib/platform";
+
 const CODE = import.meta.env.VITE_GOATCOUNTER_CODE as string | undefined;
 const SRC =
   (import.meta.env.VITE_GOATCOUNTER_SRC as string | undefined) ||
@@ -54,13 +56,17 @@ export function trackEvent(name: string): void {
 
 /**
  * 全局错误遥测：捕获未处理的 JS 错误与未兑现的 Promise rejection，
- * 上报粗粒度分类（error:js / error:promise），不传报错原文或堆栈。
+ * 上报粗粒度分类（error:js / error:promise）并附平台标签（ios / other），
+ * 便于判断是 iOS 专属还是全平台问题；不传报错原文或堆栈。
  * 与 initAnalytics 一致：未配置 code 时不绑定任何监听、零副作用。
  */
 export function initErrorTracking(): void {
   if (!CODE || typeof window === "undefined") return;
   const report = (kind: string) =>
-    window.goatcounter?.count({ event: true, path: `error:${kind}` });
+    window.goatcounter?.count({
+      event: true,
+      path: `error:${kind}/${platformTag()}`,
+    });
   window.addEventListener("error", () => report("js"));
   window.addEventListener("unhandledrejection", () => report("promise"));
 }

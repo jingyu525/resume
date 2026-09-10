@@ -5,6 +5,8 @@ import type { ResumeData } from "@/entities/resume/model";
 import { A4, SAFE_ZONE_MM, pageMarginMm, resolveResumeTheme } from "@/shared/config/presets";
 import { getTheme } from "@/plugins/core/registry";
 import { useI18n } from "@/shared/i18n";
+import { trackEvent } from "@/shared/analytics/analytics";
+import { platformTag } from "@/shared/lib/platform";
 import { buildBlocks, type Block } from "./buildBlocks";
 import { distributeBlocks } from "./distribute";
 import { BlockView, type BlockEditors } from "./BlockView";
@@ -12,6 +14,10 @@ import { BlockView, type BlockEditors } from "./BlockView";
 const MM = 96 / 25.4;
 const SIDEBAR_MM = 62;
 const GAP_MM = 6;
+/** 字体就绪等待上限：超时仍未 resolve 视为环境异常（iOS Safari 已知行为） */
+const FONTS_TIMEOUT_MS = 3000;
+/** 字体遥测每会话仅上报一次，避免重排时反复产生噪音 */
+let fontsPendingReported = false;
 
 export interface PaginatedResumeProps {
   resume: ResumeData;
@@ -55,6 +61,7 @@ export function PaginatedResume({
 
   useEffect(() => {
     let cancelled = false;
+    let fontsTimer: number | undefined;
     const run = () => {
       const contentHmm = A4.heightMm - 2 * marginMm - SAFE_ZONE_MM;
       const contentHpx = contentHmm * MM;
@@ -64,21 +71,43 @@ export function PaginatedResume({
       });
 
       const laid = distributeBlocks(main, heights, contentHpx);
+      // 自检：有可排版块却一页都没分出来 → 预览区必然空白（用户侧即「黑屏/白屏」）。
+      // 这类「静默失效」不抛异常，error 监听与 ErrorBoundary 都抓不到，只能主动自检。
+      if (main.length > 0 && laid.length === 0) {
+        trackEvent(`error:preview-empty/${platformTag()}`);
+      }
       if (!cancelled) {
         setPages(laid.length ? laid : [[]]);
         onTotalPages?.(laid.length || 1);
       }
     };
     const raf = requestAnimationFrame(() => {
+      // 先立即测量一次，不等字体：保证可见页第一时间有内容。
+      // iOS Safari 上 document.fonts.ready 可能迟迟不 resolve，若只在它 resolve 后测量，
+      // pages 会一直是空数组 → 可见页什么都不渲染，预览区一片空白（暗色模式下即「黑屏」）。
+      run();
       if (typeof document !== "undefined" && document.fonts?.ready) {
-        document.fonts.ready.then(run).catch(run);
-      } else {
-        run();
+        // 字体迟迟不 resolve 是本线上故障的根因，超时即上报，便于确认影响面
+        fontsTimer = window.setTimeout(() => {
+          if (cancelled || fontsPendingReported) return;
+          fontsPendingReported = true;
+          trackEvent(`diag:fonts-pending/${platformTag()}`);
+        }, FONTS_TIMEOUT_MS);
+        // 字体就绪后按真实字形再测一次，修正首测因字体未加载造成的分页误差
+        document.fonts.ready
+          .then(() => {
+            window.clearTimeout(fontsTimer);
+            if (!cancelled) run();
+          })
+          .catch(() => {
+            window.clearTimeout(fontsTimer);
+          });
       }
     });
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
+      if (fontsTimer !== undefined) window.clearTimeout(fontsTimer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resume, locale, appearance.layout, appearance.density, appearance.tone, appearance.accent, main.length, sidebar.length]);

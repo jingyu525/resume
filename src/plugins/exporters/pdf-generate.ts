@@ -1,20 +1,11 @@
 import type { ExportContext, ExporterPlugin } from "@/plugins/core/types";
 import { localizedText } from "@/shared/lib/localized";
+import { isIOS } from "@/shared/lib/platform";
 
 const A4_W_MM = 210;
 const A4_H_MM = 297;
 // 截图倍率：A4 @96dpi ≈ 794px，×2 ≈ 1588px，文字足够清晰且文件体积可控
 const CAPTURE_SCALE = 2;
-
-/** iOS Safari 忽略 <a download>，需走新标签交给系统 PDF 查看器。 */
-function isIOS(): boolean {
-  if (typeof navigator === "undefined") return false;
-  const ua = navigator.userAgent || "";
-  return (
-    /iP(hone|ad|od)/.test(ua) ||
-    (ua.includes("Mac") && (navigator.maxTouchPoints ?? 0) > 1)
-  );
-}
 
 async function generatePdfBlob(): Promise<Blob | null> {
   const pages = Array.from(document.querySelectorAll<HTMLElement>(".print-area"));

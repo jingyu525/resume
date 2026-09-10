@@ -108,6 +108,23 @@ describe("PaginatedResume 测量时序边界", () => {
     expect(document.querySelectorAll(".print-area").length).toBeGreaterThanOrEqual(1);
   });
 
+  it("iOS 场景：document.fonts.ready 迟迟不 resolve 时仍渲染可见页（防黑屏）", async () => {
+    // 模拟 iOS Safari：fonts.ready 一直 pending，永不 resolve
+    setFontsReady(new Promise(() => {}));
+    const resume = manyItemResume(10);
+    await act(async () => {
+      render(
+        <PaginatedResume
+          resume={resume}
+          locale={DEFAULT_LOCALE}
+          appearance={{ ...DEFAULT_APPEARANCE, layout: "single" }}
+        />,
+      );
+    });
+    // 关键：不得因等待字体而让可见页持续为空——那会让预览区只剩深色底（暗色模式即「黑屏」）
+    expect(document.querySelectorAll(".print-area").length).toBeGreaterThanOrEqual(1);
+  });
+
   it("全部章节隐藏（单栏）时仅 basics 占一页", async () => {
     const resume = createEmptyResume();
     resume.sections.forEach((s) => (s.visible = false));
