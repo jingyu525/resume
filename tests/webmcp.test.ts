@@ -207,4 +207,24 @@ describe("WebMCP 注册与降级", () => {
     Object.defineProperty(document, "modelContext", { value: {}, configurable: true });
     expect(await registerWebMcpTools()).toBe(false);
   });
+
+  it("注册被拒（如 Permissions Policy 未授权 tools）时降级为 false，且不向外抛错", async () => {
+    const denied = new Error("blocked by permissions policy");
+    denied.name = "NotAllowedError";
+    const registerTool = vi.fn(async (_tool: WebMcpTool) => {
+      throw denied;
+    });
+    Object.defineProperty(document, "modelContext", {
+      value: { registerTool },
+      configurable: true,
+    });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    // 关键：以 resolve(false) 收场，而不是 reject —— main.tsx 是 void 调用，
+    // 一旦 reject 就是 unhandled rejection
+    await expect(registerWebMcpTools()).resolves.toBe(false);
+    expect(warn).toHaveBeenCalled();
+    // 第一个工具即被拒，后续不再徒劳尝试
+    expect(registerTool).toHaveBeenCalledTimes(1);
+  });
 });

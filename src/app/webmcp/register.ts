@@ -31,17 +31,32 @@ export async function registerWebMcpTools(): Promise<boolean> {
 
   const tools = buildResumeTools();
 
-  if (typeof context.registerTool === "function") {
-    for (const tool of tools) {
-      await context.registerTool(tool);
+  try {
+    if (typeof context.registerTool === "function") {
+      for (const tool of tools) {
+        await context.registerTool(tool);
+      }
+      return true;
     }
-    return true;
-  }
 
-  if (typeof context.provideContext === "function") {
-    context.provideContext({ tools });
-    return true;
-  }
+    if (typeof context.provideContext === "function") {
+      context.provideContext({ tools });
+      return true;
+    }
 
-  return false;
+    return false;
+  } catch (error) {
+    /*
+     * 协议在、但注册被拒，已实测两种情形：
+     * 1. 权限被禁用（跨源 iframe 未加 allow="tools"，或响应头
+     *    `Permissions-Policy: tools=()`）→ 规范规定抛 NotAllowedError；
+     * 2. 早期草案实现（实测 Chrome 146 的 navigator.modelContext）对**已注册的
+     *    同名工具**再次注册会抛 InvalidStateError——新规范写的是"替换"，但
+     *    现存实现未必跟进。
+     * 渐进增强失败既不能影响应用，也不能变成 unhandled rejection
+     * （main.tsx 是 `void` 调用），所以在此收口并降级。
+     */
+    console.warn("[webmcp] tool registration rejected; continuing without it", error);
+    return false;
+  }
 }
