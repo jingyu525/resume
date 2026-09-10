@@ -65,9 +65,15 @@ export function EditorToolbar({
         <IconButton label={t("appearance.title")} onClick={onToggleAppearance}>
           <Palette size={18} />
         </IconButton>
+        {/*
+          窄屏工具栏放不下这么多控件，而多出来的宽度会把最右侧的「导出 PDF」
+          挤出视口（点不到 → 用户只能点到旁边的备份按钮）。这里让明暗快捷
+          在小屏退场，外观面板内仍有等价的「主题模式」三选。
+        */}
         <IconButton
           label={t("appearance.mode")}
           title={`${t("appearance.mode")}: ${t(`appearance.mode.${mode}`)}`}
+          className="hidden sm:grid"
           onClick={() => setAppearance({ mode: isDark ? "light" : "dark" })}
         >
           {isDark ? <Sun size={18} /> : <Moon size={18} />}
@@ -76,6 +82,9 @@ export function EditorToolbar({
         {/*
           备份是一级入口，不藏在「更多」里：本地存储是易失的（清缓存 / 换设备 /
           配额写满），而简历内容是用户唯一无法重建的东西——备份才是它真正的保险。
+
+          保持紧凑图标、不带文字：工具栏右端入口已经很密，文字会把最右侧的
+          「导出 PDF 文件」挤出窄屏视口（那正是用户点不到它、转而误点备份的原因）。
         */}
         <IconButton
           label={t("more.export")}
