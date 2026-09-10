@@ -2,8 +2,9 @@ import { useResumeStore } from "@/store/useResumeStore";
 import { ACCENT_COLORS, LAYOUTS, TONES } from "@/shared/config/presets";
 import { detectEmptySections } from "@/shared/lib/emptySections";
 import { localizedText } from "@/shared/lib/localized";
+import { textToRichText } from "@/shared/lib/sanitize";
 import { BUILTIN_LOCALES } from "@/entities/locale";
-import { getDefaultExporter, registeredLocales } from "@/plugins/core/registry";
+import { getDefaultExporter, registeredLocales, registeredSectionKinds } from "@/plugins/core/registry";
 import { runExport } from "@/features/print-export/runExport";
 import { exportBackup } from "@/features/backup-io/backup";
 import type { AppearancePref } from "@/entities/appearance/model";
@@ -269,5 +270,186 @@ export function buildResumeTools(): WebMcpTool[] {
         return "Backup download started.";
       },
     },
+
+    {
+      name: "add_item",
+      description:
+        "Append one entry to a list-style résumé section (e.g. experience, education, projects, summary). Dates use YYYY-MM. `description` is plain text: each blank-line-separated block becomes a paragraph. The change is applied only after the user approves it in a confirmation dialog.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          section: {
+            type: "string",
+            enum: registeredSectionKinds(),
+            description: "Kind of the target section, e.g. 'experience' or 'education'.",
+          },
+          title: {
+            type: "string",
+            description: "Primary line: company, school or project name.",
+          },
+          subtitle: {
+            type: "string",
+            description: "Secondary line: job title, degree, major or role.",
+          },
+          startDate: { type: "string", description: "Start date, format YYYY-MM." },
+          endDate: {
+            type: "string",
+            description: "End date, format YYYY-MM. Omit when the entry is ongoing.",
+          },
+          current: {
+            type: "boolean",
+            description: "Set true when this entry is ongoing (renders as 'Present').",
+          },
+          description: {
+            type: "string",
+            description:
+              "Plain-text body. Separate paragraphs with a blank line; avoid HTML.",
+          },
+        },
+        required: ["section"],
+      },
+      annotations: { consequentialHint: true },
+      execute: async (input) => {
+        const kind = typeof input.section === "string" ? input.section : "";
+        const section = findVisibleSection(kind);
+        if (!section) {
+          return `No visible section of kind "${kind}". Available kinds: ${registeredSectionKinds().join(", ")}.`;
+        }
+
+        const title = typeof input.title === "string" ? input.title.trim() : "";
+        const subtitle = typeof input.subtitle === "string" ? input.subtitle.trim() : "";
+        const body = typeof input.description === "string" ? input.description.trim() : "";
+        if (!title && !subtitle && !body) {
+          return "Nothing to add: pass at least one of title, subtitle, description.";
+        }
+
+        const startDate = typeof input.startDate === "string" ? input.startDate.trim() : "";
+        const endDate = typeof input.endDate === "string" ? input.endDate.trim() : "";
+        const current = input.current === true;
+
+        const approved = await requestWebMcpConfirmation({
+          toolName: "add_item",
+          summary: [title, subtitle, [startDate, current ? "present" : endDate].filter(Boolean).join(" - ")]
+            .filter(Boolean)
+            .join("  |  "),
+        });
+        if (!approved) {
+          return "The user did not approve this change; nothing was added.";
+        }
+
+        const store = useResumeStore.getState();
+        const locale = store.locale;
+        store.addItem(section.id);
+
+        // addItem 不返回新条目 id：从最新快照里取末尾那条（同一 tick 内刚追加）
+        const fresh = useResumeStore.getState().resume.sections.find((s) => s.id === section.id);
+        const item = fresh?.items[fresh.items.length - 1];
+        if (!item) return "Failed to create the entry; it was not added.";
+
+        if (title) store.updateItemLocalized(section.id, item.id, "title", locale, title);
+        if (subtitle) store.updateItemLocalized(section.id, item.id, "subtitle", locale, subtitle);
+        if (startDate || endDate) {
+          store.updateItemDate(section.id, item.id, { startDate, endDate, current, showDate: true });
+        }
+        if (body) store.updateItemDesc(section.id, item.id, locale, textToRichText(body));
+
+        // 分组型章节（渲染 groups 而非 items）里新加的条目不会显示，明确提示换工具
+        const grouped = (fresh?.groups.length ?? 0) > 0;
+        return grouped
+          ? `Added "${title || subtitle}" to ${kind}, but this section renders grouped content, so the entry may not be visible. Use set_skills for grouped sections.`
+          : `Added "${title || subtitle}" to ${kind}.`;
+      },
+    },
+
+    {
+      name: "set_skills",
+      description:
+        "Replace the content of a grouped section (by default 'skills') with the given groups. Each group is a name plus its items rendered on one line. The change is applied only after the user approves it in a confirmation dialog.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          section: {
+            type: "string",
+            enum: registeredSectionKinds(),
+            description: "Kind of the target grouped section. Defaults to 'skills'.",
+          },
+          groups: {
+            type: "array",
+            description: "Groups to write; existing groups in that section are removed.",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string", description: "Group name, e.g. 'Languages'." },
+                items: {
+                  type: "string",
+                  description: "Group content, e.g. 'Go, PHP', kept on a single line.",
+                },
+              },
+              required: ["name", "items"],
+            },
+          },
+        },
+        required: ["groups"],
+      },
+      annotations: { consequentialHint: true },
+      execute: async (input) => {
+        const groups = parseSkillGroups(input.groups);
+        if (groups.length === 0) {
+          return "Nothing to set: pass `groups` as a non-empty array of { name, items }.";
+        }
+
+        const kind = typeof input.section === "string" && input.section ? input.section : "skills";
+        const section = findVisibleSection(kind);
+        if (!section) {
+          return `No visible section of kind "${kind}". Available kinds: ${registeredSectionKinds().join(", ")}.`;
+        }
+
+        const approved = await requestWebMcpConfirmation({
+          toolName: "set_skills",
+          summary: groups.map((g) => `${g.name}: ${g.items}`).join("\n"),
+        });
+        if (!approved) {
+          return "The user did not approve this change; the section was left untouched.";
+        }
+
+        const store = useResumeStore.getState();
+        const locale = store.locale;
+        // 先清空再写入：本工具语义是「替换」，而不是追加
+        const before = useResumeStore.getState().resume.sections.find((s) => s.id === section.id);
+        for (const group of before?.groups ?? []) {
+          store.removeGroup(section.id, group.id);
+        }
+        for (const group of groups) {
+          store.addGroup(section.id);
+          // addGroup 不返回新分组 id，取最新快照的末尾一项
+          const fresh = useResumeStore.getState().resume.sections.find((s) => s.id === section.id);
+          const created = fresh?.groups[fresh.groups.length - 1];
+          if (!created) continue;
+          store.updateGroupName(section.id, created.id, locale, group.name);
+          store.updateGroupItems(section.id, created.id, locale, group.items);
+        }
+        return `Replaced "${kind}" with ${groups.length} group(s).`;
+      },
+    },
   ];
+}
+
+/** 目标章节：按 kind 找第一个可见的（不可见章节写进去用户也看不见） */
+function findVisibleSection(kind: string) {
+  const { resume } = useResumeStore.getState();
+  return resume.sections.find((section) => section.kind === kind && section.visible);
+}
+
+/** 校验并规整 set_skills 的分组入参：丢弃空项、拒绝非数组 */
+function parseSkillGroups(raw: unknown): { name: string; items: string }[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry) => {
+      const record = (entry ?? {}) as Record<string, unknown>;
+      return {
+        name: typeof record.name === "string" ? record.name.trim() : "",
+        items: typeof record.items === "string" ? record.items.trim() : "",
+      };
+    })
+    .filter((group) => group.name !== "" || group.items !== "");
 }

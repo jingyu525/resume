@@ -171,6 +171,103 @@ describe("WebMCP 工具集", () => {
     expect(click).toHaveBeenCalledTimes(1);
     expect(message).toMatch(/backup/i);
   });
+
+  it("add_item 先确认后写入，并把纯文本描述转成段落富文本", async () => {
+    useResumeStore.setState({ resume: createEmptyResume(), locale: "zh" });
+    const pending = getTool("add_item").execute({
+      section: "experience",
+      title: "Acme",
+      subtitle: "Backend Lead",
+      startDate: "2021-09",
+      current: true,
+      description: "Owned the content pipeline.\n\nLed a small team.",
+    });
+
+    expect(getWebMcpConfirmSnapshot()?.toolName).toBe("add_item");
+    resolveWebMcpConfirmation(true);
+    const message = await pending;
+
+    const section = useResumeStore.getState().resume.sections.find((s) => s.kind === "experience");
+    const item = section?.items[section.items.length - 1];
+    expect(item?.title?.zh).toBe("Acme");
+    expect(item?.subtitle?.zh).toBe("Backend Lead");
+    expect(item?.startDate).toBe("2021-09");
+    expect(item?.current).toBe(true);
+    // 两段纯文本 → 两个段落
+    expect(item?.description?.zh).toBe("<p>Owned the content pipeline.</p><p>Led a small team.</p>");
+    expect(message).toContain("Acme");
+  });
+
+  it("add_item 把描述里的 HTML 转义（纯文本语义，不给注入留口子）", async () => {
+    useResumeStore.setState({ resume: createEmptyResume(), locale: "zh" });
+    const pending = getTool("add_item").execute({
+      section: "project",
+      title: "X",
+      description: "<script>alert(1)</script><img src=x onerror=alert(2)>",
+    });
+    resolveWebMcpConfirmation(true);
+    await pending;
+
+    const section = useResumeStore.getState().resume.sections.find((s) => s.kind === "project");
+    const html = section?.items[section.items.length - 1]?.description?.zh ?? "";
+    expect(html).not.toContain("<script");
+    expect(html).not.toContain("<img");
+    expect(html).toContain("&lt;script&gt;");
+  });
+
+  it("add_item 对未知章节返回可用 kind 清单", async () => {
+    useResumeStore.setState({ resume: createEmptyResume(), locale: "en" });
+    const message = await getTool("add_item").execute({ section: "not-a-kind", title: "x" });
+    expect(message).toContain("not-a-kind");
+    expect(message).toContain("experience");
+  });
+
+  it("add_item 缺 title/subtitle/description 时给出可操作提示，且不弹窗", async () => {
+    const message = await getTool("add_item").execute({ section: "experience" });
+    expect(message).toMatch(/at least one of/i);
+    expect(getWebMcpConfirmSnapshot()).toBeNull();
+  });
+
+  it("set_skills 是替换语义：多次调用不累积旧分组", async () => {
+    useResumeStore.setState({ resume: createEmptyResume(), locale: "zh" });
+
+    const first = getTool("set_skills").execute({ groups: [{ name: "Lang", items: "Go, PHP" }] });
+    resolveWebMcpConfirmation(true);
+    await first;
+    let skills = useResumeStore.getState().resume.sections.find((s) => s.kind === "skills");
+    expect(skills?.groups.length).toBe(1);
+
+    const second = getTool("set_skills").execute({
+      groups: [
+        { name: "语言", items: "Golang、PHP" },
+        { name: "存储", items: "MySQL、Redis" },
+      ],
+    });
+    resolveWebMcpConfirmation(true);
+    await second;
+
+    skills = useResumeStore.getState().resume.sections.find((s) => s.kind === "skills");
+    expect(skills?.groups.length).toBe(2);
+    expect(skills?.groups[0].name.zh).toBe("语言");
+    expect(skills?.groups[1].items.zh).toBe("MySQL、Redis");
+  });
+
+  it("set_skills 被拒时保留原有分组", async () => {
+    useResumeStore.setState({ resume: createEmptyResume(), locale: "zh" });
+    const pending = getTool("set_skills").execute({ groups: [{ name: "Lang", items: "Go" }] });
+    resolveWebMcpConfirmation(false);
+    const message = await pending;
+
+    const skills = useResumeStore.getState().resume.sections.find((s) => s.kind === "skills");
+    expect(skills?.groups.length).toBe(0);
+    expect(message).toMatch(/did not approve/i);
+  });
+
+  it("set_skills 空数组时不弹窗，直接返回提示", async () => {
+    const message = await getTool("set_skills").execute({ groups: [] });
+    expect(message).toMatch(/non-empty/i);
+    expect(getWebMcpConfirmSnapshot()).toBeNull();
+  });
 });
 
 describe("WebMCP 注册与降级", () => {
