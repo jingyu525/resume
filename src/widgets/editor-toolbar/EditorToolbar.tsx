@@ -24,7 +24,11 @@ export function EditorToolbar({
   const setAppearance = useResumeStore((s) => s.setAppearance);
   const locale = useResumeStore((s) => s.locale);
   const mode = appearance.mode;
-  const isDark = mode === "dark" || (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const prefersDark =
+    typeof window !== "undefined" && typeof window.matchMedia === "function"
+      ? window.matchMedia("(prefers-color-scheme: dark)").matches
+      : false;
+  const isDark = mode === "dark" || (mode === "system" && prefersDark);
 
   return (
     <header className="relative z-50 flex h-14 items-center gap-2 border-b border-border bg-background/80 px-3 backdrop-blur-xl">
