@@ -14,7 +14,7 @@ import type { SectionBlockEditors } from "@/plugins/core/types";
 import { EditableField } from "@/shared/ui/editable-field";
 import { useDismiss } from "@/shared/ui/use-dismiss";
 import { DateRangeFields } from "./parts-fields";
-import { Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 
 /** 预览块：经历条目（公司/项目/学校 + 职位 + 日期 + 富文本描述） */
@@ -130,15 +130,20 @@ function ItemDateEditor({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label={t("edit.datePlaceholder")}
-        title={date || t("edit.datePlaceholder")}
+        // aria-label 跟 title 一起随日期变；之前硬编码为"添加日期（可删除）"，
+        // 设了日期后屏幕阅读器仍念"添加日期"，会被误认为日期没生效。
+        aria-label={date || t("edit.addDate")}
+        title={date || t("edit.addDate")}
+        aria-expanded={open}
+        aria-haspopup="dialog"
         className={cn(
-          "rs-item-date cursor-pointer rounded px-1 hover:bg-foreground/5",
+          "rs-item-date inline-flex items-center gap-1 cursor-pointer rounded px-1 hover:bg-foreground/5",
           // 空值占位是编辑提示，必须 no-print，否则会印到 PDF
           !date && "no-print text-muted-foreground italic",
         )}
       >
-        {date || t("edit.datePlaceholder")}
+        {!date && <Plus size={12} aria-hidden="true" />}
+        {date || t("edit.addDate")}
       </button>
       {open && (
         <div className="no-print absolute right-0 z-50 mt-1 w-60 rounded-xl border border-border bg-popover p-3 shadow-xl">
