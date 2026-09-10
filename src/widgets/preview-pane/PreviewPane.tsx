@@ -49,6 +49,11 @@ export function PreviewPane({ coach = false }: { coach?: boolean }) {
     const recompute = () => {
       const avail = wrap.clientWidth - 32;
       setScale(Math.max(0.3, Math.min(1, avail / PAGE_W_PX)));
+      // 首次计算时 inner.scrollHeight 可能为 0（内容异步渲染中），等待后重试
+      if (inner.scrollHeight === 0) {
+        setTimeout(recompute, 100);
+        return;
+      }
       setBox({ w: inner.scrollWidth, h: inner.scrollHeight });
     };
     recompute();
@@ -56,7 +61,7 @@ export function PreviewPane({ coach = false }: { coach?: boolean }) {
     ro.observe(wrap);
     ro.observe(inner);
     return () => ro.disconnect();
-  }, []);
+  }, [pages]);
 
   return (
     <div className="relative h-full">
