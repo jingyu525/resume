@@ -9,6 +9,26 @@ const A4_H_MM = 297;
 const CAPTURE_SCALE = 2;
 /** object URL 延迟回收时间：确保下载/打开已开始 */
 const REVOKE_DELAY_MS = 15000;
+/** 导出整体超时：防 html2canvas 等在某些环境（headless / 异常字体 / 复杂 CSS）永久挂起。
+ *  超时即抛出 → 触发 runExport 的 catch → 上报 error:export，而非让用户无响应地卡住。
+ *  正常环境几秒即完成，30s 阈值远宽于真实耗时。 */
+const EXPORT_TIMEOUT_MS = 30000;
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const id = setTimeout(() => reject(new Error("export-timeout")), ms);
+    p.then(
+      (v) => {
+        clearTimeout(id);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(id);
+        reject(e);
+      },
+    );
+  });
+}
 
 async function generatePdfBlob(): Promise<Blob | null> {
   const pages = Array.from(document.querySelectorAll<HTMLElement>(".print-area"));
@@ -19,9 +39,10 @@ async function generatePdfBlob(): Promise<Blob | null> {
     await document.fonts.ready.catch(() => {});
   }
 
-  // 仅在用户点击导出时动态加载（代码分割 + 不拖累首屏/测试）
-  const { jsPDF } = await import("jspdf");
-  const html2canvas = (await import("html2canvas-pro")).default;
+  // 仅在用户点击导出时动态加载（代码分割 + 不拖累首屏/测试）。
+  // 用超时包裹每一步，避免任意环节在某环境下永久挂起导致导出无响应。
+  const { jsPDF } = await withTimeout(import("jspdf"), EXPORT_TIMEOUT_MS);
+  const html2canvas = (await withTimeout(import("html2canvas-pro"), EXPORT_TIMEOUT_MS)).default;
 
   const doc = new jsPDF({
     unit: "mm",
@@ -31,12 +52,15 @@ async function generatePdfBlob(): Promise<Blob | null> {
   });
 
   for (let i = 0; i < pages.length; i++) {
-    const canvas = await html2canvas(pages[i], {
-      scale: CAPTURE_SCALE,
-      backgroundColor: "#ffffff",
-      useCORS: true,
-      logging: false,
-    });
+    const canvas = await withTimeout(
+      html2canvas(pages[i], {
+        scale: CAPTURE_SCALE,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        logging: false,
+      }),
+      EXPORT_TIMEOUT_MS,
+    );
     // 无 footer：直接铺满整页 A4（分页已保证每页内容落在 297mm 内）
     const img = canvas.toDataURL("image/jpeg", 0.95);
     if (i > 0) doc.addPage();
