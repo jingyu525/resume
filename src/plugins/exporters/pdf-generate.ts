@@ -7,16 +7,37 @@ const A4_W_MM = 210;
 const A4_H_MM = 297;
 /** 截图倍率：A4 @96dpi ≈ 794px，×2 ≈ 1588px，文字足够清晰且文件体积可控 */
 const CAPTURE_SCALE = 2;
-/** iOS 多页降采样：canvas 内存上限比桌面低得多，×1.5（≈1191px 宽）在清晰与稳定间取平衡 */
+/**
+ * iOS 一律降采样到 ×1.5（≈1191px 宽，仍清晰）。
+ * 移动端 canvas 内存上限与算力都远低于桌面，倍率是最直接的耗时/失败率杠杆：
+ * 面积比 ×2 少 44%，多页导出时差别非常明显。
+ */
 const CAPTURE_SCALE_IOS = 1.5;
-/** 超过该页数才在 iOS 上降采样（单页无所谓，多页才吃内存） */
-const IOS_SCALE_PAGE_THRESHOLD = 2;
 /** object URL 延迟回收时间：确保下载/打开已开始 */
 const REVOKE_DELAY_MS = 15000;
-/** 导出整体超时：防 html2canvas 等在某些环境（headless / 异常字体 / 复杂 CSS）永久挂起。
- *  超时即抛出 → 触发 runExport 的 catch → 上报 error:export，而非让用户无响应地卡住。
- *  正常环境几秒即完成，30s 阈值远宽于真实耗时。 */
+/**
+ * 生成阶段**整体**超时：从等字体到最后一页截图，全程只计这一次。
+ *
+ * 曾是按步骤各计 30s，多页会叠加成 30s×页数——用户侧就是「一直转圈」。
+ * 超时即抛出 → runExport 兜住 → UI 提示失败，绝不无限等待。
+ */
 const EXPORT_TIMEOUT_MS = 30000;
+/** 分包加载超时：正常是毫秒级，只在网络/分包异常时兜底 */
+const IMPORT_TIMEOUT_MS = 10000;
+/**
+ * 系统分享面板的等待上限。
+ *
+ * 用户在面板里可能长时间不操作，某些环境也可能压根不 settle；一味 await 会让按钮
+ * 一直转圈。到点不判失败，改落兜底框——PDF 已经生成好了，用户仍有一条手动拿文件的路。
+ */
+const SHARE_TIMEOUT_MS = 45000;
+/**
+ * 字体就绪等待上限，与 PaginatedResume 的测量等待保持一致。
+ *
+ * iOS Safari 上 document.fonts.ready 可能迟迟不 resolve（项目内已知行为），
+ * 裸 await 会让导出永久挂起——连整体超时都救不了，因为它卡在计时开始之前。
+ */
+const FONTS_TIMEOUT_MS = 3000;
 /** 等待分页就绪的上限：分页测量跑在 rAF 里，用户可能在首帧前就点了导出。
  *  测量只需一帧，1.5s 足以覆盖字体阻塞等极端情况，又不会让人干等。 */
 const PAGES_WAIT_MS = 1500;
@@ -27,9 +48,12 @@ const HANDOFF_ID = "rs-export-handoff";
 
 type Translate = ExportContext["t"];
 
-function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+function withTimeout<T>(p: Promise<T>, ms: number, onTimeout?: () => void): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    const id = setTimeout(() => reject(new Error("export-timeout")), ms);
+    const id = setTimeout(() => {
+      onTimeout?.();
+      reject(new Error("export-timeout"));
+    }, ms);
     p.then(
       (v) => {
         clearTimeout(id);
@@ -81,16 +105,27 @@ async function withCaptureLayout<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
-async function generatePdfBlob(pages: HTMLElement[], scale: number): Promise<Blob> {
-  // 等字体就绪，避免字形/分页错位；字体加载失败也不阻塞导出（兜底，绝不白屏）
-  if (typeof document !== "undefined" && document.fonts?.ready) {
-    await document.fonts.ready.catch(() => {});
-  }
+/**
+ * 等字体就绪再截图，避免字形/分页错位。
+ *
+ * 两道兜底都不能省：iOS Safari 上 fonts.ready 可能永不 resolve（裸 await 会永久挂起），
+ * 也可能直接 reject（字体服务异常）——两者都必须继续导出，宁可字形略偏也不能不出片。
+ */
+async function waitFonts(): Promise<void> {
+  const ready = document.fonts?.ready;
+  if (!ready) return;
+  await Promise.race([
+    ready.catch(() => undefined),
+    new Promise<void>((resolve) => setTimeout(resolve, FONTS_TIMEOUT_MS)),
+  ]);
+}
 
-  // 仅在用户点击导出时动态加载（代码分割 + 不拖累首屏/测试）。
-  // 用超时包裹每一步，避免任意环节在某环境下永久挂起导致导出无响应。
-  const { jsPDF } = await withTimeout(import("jspdf"), EXPORT_TIMEOUT_MS);
-  const html2canvas = (await withTimeout(import("html2canvas-pro"), EXPORT_TIMEOUT_MS)).default;
+async function generatePdfBlob(pages: HTMLElement[], scale: number): Promise<Blob> {
+  await waitFonts();
+
+  // 仅在用户点击导出时动态加载（代码分割 + 不拖累首屏/测试）
+  const { jsPDF } = await withTimeout(import("jspdf"), IMPORT_TIMEOUT_MS);
+  const html2canvas = (await withTimeout(import("html2canvas-pro"), IMPORT_TIMEOUT_MS)).default;
 
   const doc = new jsPDF({
     unit: "mm",
@@ -100,15 +135,13 @@ async function generatePdfBlob(pages: HTMLElement[], scale: number): Promise<Blo
   });
 
   for (let i = 0; i < pages.length; i++) {
-    const canvas = await withTimeout(
-      html2canvas(pages[i], {
-        scale,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        logging: false,
-      }),
-      EXPORT_TIMEOUT_MS,
-    );
+    // 不再逐页计时：整体超时已在 run 里覆盖全部分页，逐页计时会叠加成 30s×页数
+    const canvas = await html2canvas(pages[i], {
+      scale,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      logging: false,
+    });
     // 无 footer：直接铺满整页 A4（分页已保证每页内容落在 297mm 内）
     const img = canvas.toDataURL("image/jpeg", 0.95);
     // 立即释放画布：多页顺序截图时，iOS 的 canvas 内存上限很容易被几张大图吃满而中途失败
@@ -144,7 +177,7 @@ async function shareFile(blob: Blob, filename: string): Promise<boolean> {
   if (!nav.canShare({ files: [file] })) return false;
 
   try {
-    await nav.share({ files: [file] });
+    await withTimeout(nav.share({ files: [file] }), SHARE_TIMEOUT_MS);
     return true;
   } catch (err) {
     // 用户在系统面板里取消：他的意图是「先不存」，别再弹兜底框烦他
@@ -313,9 +346,12 @@ export const pdfGenerateExporter: ExporterPlugin = {
       throw new Error("no-print-area");
     }
 
-    const scale =
-      isIOS() && pages.length > IOS_SCALE_PAGE_THRESHOLD ? CAPTURE_SCALE_IOS : CAPTURE_SCALE;
-    const blob = await withCaptureLayout(() => generatePdfBlob(pages, scale));
+    const scale = isIOS() ? CAPTURE_SCALE_IOS : CAPTURE_SCALE;
+    const blob = await withTimeout(
+      withCaptureLayout(() => generatePdfBlob(pages, scale)),
+      EXPORT_TIMEOUT_MS,
+      () => trackError("export-timeout"),
+    );
 
     if (isIOS()) {
       if (await shareFile(blob, filename)) return;

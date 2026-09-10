@@ -104,6 +104,7 @@ describe("pdf-generate 导出边界", () => {
     revokeObjUrl.mockRestore();
     anchorClick.mockRestore();
     uninstallShare();
+    delete (document as unknown as Record<string, unknown>).fonts;
     document.querySelectorAll(".print-area").forEach((el) => el.remove());
     // 兜底弹层挂在 body 上，需清理避免污染后续用例
     document.querySelectorAll('[role="dialog"]').forEach((el) => el.remove());
@@ -211,6 +212,16 @@ describe("pdf-generate 导出边界", () => {
     expect(dialog?.querySelector("img")).toBeNull();
     // 文件名原样保留在属性里，只是从未被当成标记解析
     expect(dialog?.querySelector("a[download]")?.getAttribute("download")).toContain("<img");
+  });
+
+  it("字体永不就绪（iOS 上 fonts.ready 可能不 resolve）时仍能出片，不永久挂起", async () => {
+    // 回归：裸 await document.fonts.ready 会让导出永远卡在「生成中」
+    Object.defineProperty(document, "fonts", {
+      configurable: true,
+      value: { ready: new Promise<never>(() => {}) },
+    });
+    addPrintAreas(1);
+    await expect(pdfGenerateExporter.run(makeCtx())).resolves.toBeUndefined();
   });
 
   it("字体加载失败（fonts.ready reject）仍成功出图，不抛错", async () => {
