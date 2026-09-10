@@ -73,7 +73,8 @@ function download(filename: string, content: string): void {
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  // 延迟回收：立即 revoke 会让尚未真正开始的下载失效（iOS 上尤其明显）
+  setTimeout(() => URL.revokeObjectURL(url), 15000);
 }
 
 export const markdownExporter: ExporterPlugin = {

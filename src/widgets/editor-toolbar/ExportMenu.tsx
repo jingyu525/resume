@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useI18n } from "@/shared/i18n";
 import { DropdownMenu } from "@/shared/ui/dropdown";
 import { Button } from "@/shared/ui/button";
 import { Dialog } from "@/shared/ui/dialog";
 import { cn } from "@/shared/lib/cn";
-import { ChevronDown, Download, AlertTriangle } from "lucide-react";
+import { ChevronDown, Download, AlertTriangle, Loader2 } from "lucide-react";
 import { getDefaultExporter, listExporters } from "@/plugins/core/registry";
 import type { ExporterPlugin } from "@/plugins/core/types";
 import { runExport } from "@/features/print-export/runExport";
@@ -24,6 +24,23 @@ export function ExportMenu() {
   const defaultExporter = getDefaultExporter();
   const others = listExporters().filter((e) => e.id !== defaultExporter?.id);
   const [pending, setPending] = useState<{ exporter: ExporterPlugin; empty: EmptySection[] } | null>(null);
+  const [busy, setBusy] = useState(false);
+  // 生成耗时数秒，期间必须挡住重复点击：否则会叠加多个导出任务（iOS 上尤其明显）
+  const busyRef = useRef(false);
+
+  const fire = async (exporter: ExporterPlugin) => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    try {
+      const ok = await runExport(exporter);
+      // 失败必须让用户看见：旧实现只埋点，用户侧表现为「点了没反应」
+      if (!ok) toast(t("export.fail"), "error");
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  };
 
   const doExport = (exporter: ExporterPlugin) => {
     const { resume, locale } = useResumeStore.getState();
@@ -40,12 +57,12 @@ export function ExportMenu() {
     if (empty.length > 0) {
       setPending({ exporter, empty });
     } else {
-      runExport(exporter);
+      void fire(exporter);
     }
   };
 
   const confirmExport = () => {
-    if (pending) runExport(pending.exporter);
+    if (pending) void fire(pending.exporter);
     setPending(null);
   };
 
@@ -55,11 +72,16 @@ export function ExportMenu() {
         <Button
           size="sm"
           className={cn(others.length > 0 && "rounded-r-none")}
+          disabled={busy}
           onClick={() => defaultExporter && doExport(defaultExporter)}
         >
-          <Download size={16} />
+          {busy ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
           <span className="hidden sm:inline">
-            {defaultExporter ? t(defaultExporter.labelKey) : t("editor.print")}
+            {busy
+              ? t("export.preparing")
+              : defaultExporter
+                ? t(defaultExporter.labelKey)
+                : t("editor.print")}
           </span>
         </Button>
 

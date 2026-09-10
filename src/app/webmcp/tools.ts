@@ -255,8 +255,10 @@ export function buildResumeTools(): WebMcpTool[] {
         if (document.querySelectorAll(".print-area").length === 0) {
           return "The résumé preview is not rendered yet. Open the editor page (/editor) first, then retry.";
         }
-        await runExport(exporter);
-        return "PDF export finished; the browser should be downloading the file.";
+        const ok = await runExport(exporter);
+        return ok
+          ? "PDF export finished; the browser should be downloading the file."
+          : "PDF export failed. Ask the user to try again from the editor page.";
       },
     },
 

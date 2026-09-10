@@ -87,11 +87,9 @@ describe("导出埋点（runExport 调用门）", () => {
     expect(trackErrorMock).toHaveBeenCalledWith("export");
   });
 
-  it("没有可导出内容时导出流程正常结束（export-empty 静默失败分支不崩溃）", async () => {
-    // 无 .print-area：generatePdfBlob 返回 null，run 进入 export-empty 分支提前 return，
-    // 不应抛错（否则用户点了导出无反应且控制台报错）。埋点调用（trackError("export-empty")）
-    // 因 Vitest 对间接依赖的 mock 作用域限制无法在此断言，已由分支执行（run 内 if(!blob)）
-    // 与统一入口（analytics-errors.test.ts 验证带平台维度）双重保证，并在浏览器端到端验证。
+  it("没有可导出内容时：导出器抛错，由 runExport 兜住并返回失败（用户侧可见，不再静默）", async () => {
+    // 无 .print-area 意味着「点了导出却什么都没发生」，是最糟的一类失败。
+    // 契约：run 抛错（不再静默 return），runExport 兜住 → 返回 false → UI 提示「导出失败」。
     await expect(
       pdfGenerateExporter.run({
         resume: createEmptyResume(),
@@ -99,6 +97,11 @@ describe("导出埋点（runExport 调用门）", () => {
         locale: DEFAULT_LOCALE,
         t: (k: unknown) => String(k),
       } as never),
-    ).resolves.toBeUndefined();
+    ).rejects.toThrow("no-print-area");
+  });
+
+  it("同一个失败经 runExport 门面不外泄异常，返回 false 供 UI 提示", async () => {
+    await expect(runExport(pdfGenerateExporter)).resolves.toBe(false);
+    expect(trackErrorMock).toHaveBeenCalledWith("export");
   });
 });

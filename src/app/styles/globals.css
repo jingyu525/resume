@@ -322,6 +322,17 @@ a {
   /* 不限制尺寸、不 overflow:hidden，确保内部分页测量正常 */
 }
 
+/*
+ * 导出截图期间（pdf-generate 临时加类）：fixed 换成 absolute 离屏。
+ * html2canvas 对 position:fixed 元素的处理长期不可靠——克隆进临时 iframe 后定位基准
+ * 变化，典型后果是整页空白。absolute 同样不影响屏幕布局，且是其安全区。
+ */
+.rs-print-source.rs-exporting {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+}
+
 @media print {
   @page {
     size: A4;
