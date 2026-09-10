@@ -1,6 +1,5 @@
 import { Component, type ReactNode } from "react";
-import { trackEvent } from "./analytics";
-import { platformTag } from "../lib/platform";
+import { trackError } from "./analytics";
 
 interface Props {
   children: ReactNode;
@@ -19,7 +18,7 @@ export class ErrorBoundary extends Component<Props, { hasError: boolean }> {
   }
 
   componentDidCatch() {
-    trackEvent(`error:react/${platformTag()}`);
+    trackError("react");
   }
 
   render() {

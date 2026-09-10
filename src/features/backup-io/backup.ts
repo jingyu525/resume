@@ -3,6 +3,7 @@ import { importPersisted, savePersisted, STORAGE_VERSION } from "@/store/persist
 import { validateBackup } from "@/store/migrations";
 import { useToast } from "@/shared/ui/toast";
 import { useI18n } from "@/shared/i18n";
+import { trackError } from "@/shared/analytics/analytics";
 
 /** 导出备份：将当前简历与外观导出为本地 JSON 文件（FR-9） */
 export function exportBackup() {
@@ -36,6 +37,7 @@ export function useImportBackup() {
         try {
           const parsed = JSON.parse(String(reader.result)) as unknown;
           if (!validateBackup(parsed)) {
+            trackError("import", "invalid");
             toast(t("toast.importFailed"), "error");
             return;
           }
@@ -43,10 +45,14 @@ export function useImportBackup() {
           useResumeStore.getState().loadState(resume, appearance);
           toast(t("toast.imported"), "success");
         } catch {
+          trackError("import", "parse");
           toast(t("toast.importFailed"), "error");
         }
       };
-      reader.onerror = () => toast(t("toast.importFailed"), "error");
+      reader.onerror = () => {
+        trackError("import", "read");
+        toast(t("toast.importFailed"), "error");
+      };
       reader.readAsText(file);
     };
     input.click();

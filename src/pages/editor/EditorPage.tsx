@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 
 import { useI18n } from "@/shared/i18n";
 import { useToast } from "@/shared/ui/toast";
 import { loadError } from "@/store/persistence";
+import { trackError } from "@/shared/analytics/analytics";
 import { ensureStructure, useResumeStore } from "@/store/useResumeStore";
 import { useUndoRedoShortcuts } from "@/features/undo-redo/UndoRedo";
 import { useExitGuard } from "@/features/persistence/useExitGuard";
@@ -84,8 +85,13 @@ export function EditorPage() {
   const [structureRepaired] = useState(() => ensureStructure());
 
   useEffect(() => {
+    // 读取失败的埋点已在 persistence 层上报（error:load），此处不重复
     if (loadFailed) toast(t("toast.loadFailed"), "error");
-    if (structureRepaired) toast(t("empty.noSections"), "error");
+    if (structureRepaired) {
+      // 章节结构缺失属系统故障，需兜底补种才能正常使用
+      trackError("structure");
+      toast(t("empty.noSections"), "error");
+    }
   }, [loadFailed, structureRepaired, toast, t]);
 
   return (

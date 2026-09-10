@@ -3,7 +3,7 @@ import { getDefaultExporter } from "@/plugins/core/registry";
 import type { ExporterPlugin } from "@/plugins/core/types";
 import { getDictionaries } from "@/plugins/core/dict";
 import { translate } from "@/shared/i18n";
-import { trackEvent } from "@/shared/analytics/analytics";
+import { trackError, trackEvent } from "@/shared/analytics/analytics";
 
 /** 执行任意导出插件（M4：导出器可插拔，UI 暴露全部注册的导出器）。 */
 export async function runExport(exporter: ExporterPlugin): Promise<void> {
@@ -21,7 +21,7 @@ export async function runExport(exporter: ExporterPlugin): Promise<void> {
     trackEvent(`export:${exporter.id}`);
   } catch {
     // 导出失败：粗粒度上报，便于发现线上异常（不暴露报错细节）
-    trackEvent("error:export");
+    trackError("export");
   }
 }
 

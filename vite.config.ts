@@ -31,6 +31,11 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./tests/setup.ts"],
+    // 埋点测试需要 code 非空：否则 trackEvent 直接 return，无法断言上报内容。
+    // 未 mock goatcounter 的用例里 window.goatcounter 为 undefined，可选链静默跳过，无副作用。
+    env: {
+      VITE_GOATCOUNTER_CODE: "test-code",
+    },
     // 含 .mjs：规则自检测试需要直接 import scripts/rules/*.mjs，
     // 写成 .ts 会让 tsc（strict）要求这些工具脚本提供 .d.mts 类型声明，得不偿失。
     include: ["tests/**/*.test.{ts,tsx,mjs}"],

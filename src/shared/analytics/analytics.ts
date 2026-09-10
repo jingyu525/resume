@@ -54,19 +54,60 @@ export function trackEvent(name: string): void {
   window.goatcounter?.count({ event: true, path: name });
 }
 
+// 保持与既有看板数据一致的形状：error:<kind>/<platform>/<tag...>
+function errorPath(kind: string, tags: string[]): string {
+  return [`error:${kind}`, platformTag(), ...tags].join("/");
+}
+
+function diagPath(kind: string, tags: string[]): string {
+  return [`diag:${kind}`, platformTag(), ...tags].join("/");
+}
+
+/** 「每会话仅一次」标记：用于自动保存等高频路径限流，避免刷屏污染看板 */
+const onceKeys = new Set<string>();
+
+function markOnce(path: string): boolean {
+  if (onceKeys.has(path)) return false;
+  onceKeys.add(path);
+  return true;
+}
+
 /**
- * 全局错误遥测：捕获未处理的 JS 错误与未兑现的 Promise rejection，
- * 上报粗粒度分类（error:js / error:promise）并附平台标签（ios / other），
- * 便于判断是 iOS 专属还是全平台问题；不传报错原文或堆栈。
- * 与 initAnalytics 一致：未配置 code 时不绑定任何监听、零副作用。
+ * 异常上报**统一入口**：自动附带平台等诊断维度。
+ *
+ * 之所以收敛成入口而非各处手拼字符串：平台这类通用维度靠人工拼接极易漏，
+ * 漏了就只剩次数、看不出是不是 iOS 专属（error:export 就漏过一次）。
+ * 走这里则自动带上，新增埋点不会再漏维度。
+ *
+ * 只接受粗粒度分类名 + 低基数标签；切勿传报错原文、堆栈或用户输入。
+ */
+export function trackError(kind: string, ...tags: string[]): void {
+  trackEvent(errorPath(kind, tags));
+}
+
+/** 诊断 / 健康度上报：不是错误，但指示环境异常风险（如字体迟迟未就绪）。 */
+export function trackDiagnostic(kind: string, ...tags: string[]): void {
+  trackEvent(diagPath(kind, tags));
+}
+
+/** 每会话仅上报一次的异常（高频路径用）。 */
+export function trackErrorOnce(kind: string, ...tags: string[]): void {
+  const path = errorPath(kind, tags);
+  if (markOnce(path)) trackEvent(path);
+}
+
+/** 每会话仅上报一次的诊断（高频路径用）。 */
+export function trackDiagnosticOnce(kind: string, ...tags: string[]): void {
+  const path = diagPath(kind, tags);
+  if (markOnce(path)) trackEvent(path);
+}
+
+/**
+ * 全局错误遥测：捕获未处理的 JS 错误与未兑现的 Promise rejection。
+ * 未配置 code 时不绑定任何监听、零副作用。
  */
 export function initErrorTracking(): void {
   if (!CODE || typeof window === "undefined") return;
-  const report = (kind: string) =>
-    window.goatcounter?.count({
-      event: true,
-      path: `error:${kind}/${platformTag()}`,
-    });
-  window.addEventListener("error", () => report("js"));
-  window.addEventListener("unhandledrejection", () => report("promise"));
+  window.addEventListener("error", () => trackError("js"));
+  window.addEventListener("unhandledrejection", () => trackError("promise"));
 }

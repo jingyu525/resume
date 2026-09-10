@@ -5,8 +5,7 @@ import type { ResumeData } from "@/entities/resume/model";
 import { A4, SAFE_ZONE_MM, pageMarginMm, resolveResumeTheme } from "@/shared/config/presets";
 import { getTheme } from "@/plugins/core/registry";
 import { useI18n } from "@/shared/i18n";
-import { trackEvent } from "@/shared/analytics/analytics";
-import { platformTag } from "@/shared/lib/platform";
+import { trackDiagnosticOnce, trackError } from "@/shared/analytics/analytics";
 import { buildBlocks, type Block } from "./buildBlocks";
 import { distributeBlocks } from "./distribute";
 import { BlockView, type BlockEditors } from "./BlockView";
@@ -16,8 +15,6 @@ const SIDEBAR_MM = 62;
 const GAP_MM = 6;
 /** 字体就绪等待上限：超时仍未 resolve 视为环境异常（iOS Safari 已知行为） */
 const FONTS_TIMEOUT_MS = 3000;
-/** 字体遥测每会话仅上报一次，避免重排时反复产生噪音 */
-let fontsPendingReported = false;
 
 export interface PaginatedResumeProps {
   resume: ResumeData;
@@ -74,7 +71,7 @@ export function PaginatedResume({
       // 自检：有可排版块却一页都没分出来 → 预览区必然空白（用户侧即「黑屏/白屏」）。
       // 这类「静默失效」不抛异常，error 监听与 ErrorBoundary 都抓不到，只能主动自检。
       if (main.length > 0 && laid.length === 0) {
-        trackEvent(`error:preview-empty/${platformTag()}`);
+        trackError("preview-empty");
       }
       if (!cancelled) {
         setPages(laid.length ? laid : [[]]);
@@ -89,9 +86,8 @@ export function PaginatedResume({
       if (typeof document !== "undefined" && document.fonts?.ready) {
         // 字体迟迟不 resolve 是本线上故障的根因，超时即上报，便于确认影响面
         fontsTimer = window.setTimeout(() => {
-          if (cancelled || fontsPendingReported) return;
-          fontsPendingReported = true;
-          trackEvent(`diag:fonts-pending/${platformTag()}`);
+          if (cancelled) return;
+          trackDiagnosticOnce("fonts-pending");
         }, FONTS_TIMEOUT_MS);
         // 字体就绪后按真实字形再测一次，修正首测因字体未加载造成的分页误差
         document.fonts.ready

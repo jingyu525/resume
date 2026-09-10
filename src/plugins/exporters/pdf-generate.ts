@@ -1,6 +1,7 @@
 import type { ExportContext, ExporterPlugin } from "@/plugins/core/types";
 import { localizedText } from "@/shared/lib/localized";
 import { isIOS } from "@/shared/lib/platform";
+import { trackError } from "@/shared/analytics/analytics";
 
 const A4_W_MM = 210;
 const A4_H_MM = 297;
@@ -195,6 +196,8 @@ export const pdfGenerateExporter: ExporterPlugin = {
     const name = localizedText(resume.basics.name, locale) || "resume";
     const blob = await generatePdfBlob();
     if (!blob) {
+      // 没有 .print-area = 导出什么都没发生（用户点了没反应），属静默失败
+      trackError("export-empty");
       iosWin?.close();
       return;
     }

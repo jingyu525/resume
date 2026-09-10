@@ -2,6 +2,7 @@ import type { AppearancePref } from "@/entities/appearance/model";
 import type { ResumeData } from "@/entities/resume/model";
 import type { PersistedState } from "@/entities/resume/persist";
 import { getActiveStorage } from "@/plugins/core/registry";
+import { trackError, trackErrorOnce } from "@/shared/analytics/analytics";
 import { migrate, STORAGE_VERSION } from "./migrations";
 
 /**
@@ -29,6 +30,8 @@ export function loadPersisted(): { resume: ResumeData; appearance: AppearancePre
     return raw ? importPersisted(raw) : null;
   } catch (err) {
     lastLoadError = err;
+    // 数据打不开会被用户误认为「简历被清空」，必须能在线上被看见
+    trackError("load");
     return null;
   }
 }
@@ -81,12 +84,20 @@ export function importPersisted(raw: unknown): { resume: ResumeData; appearance:
 export async function savePersisted(state: PersistedState): Promise<boolean> {
   const storage = getActiveStorage();
   // 没有可用存储 = 没存上，不能当成成功
-  if (!storage) return false;
-  try {
-    return await storage.save(state);
-  } catch {
+  if (!storage) {
+    trackErrorOnce("save", "no-storage");
     return false;
   }
+  let ok = false;
+  try {
+    ok = await storage.save(state);
+  } catch {
+    ok = false;
+  }
+  // 写盘失败 = 内容没落盘（隐私模式 / 配额溢出），用户却以为已保存。
+  // 自动保存高频触发，故每会话只报一次，避免刷屏污染看板。
+  if (!ok) trackErrorOnce("save");
+  return ok;
 }
 
 export { STORAGE_VERSION };
