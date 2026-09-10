@@ -6,6 +6,7 @@ import { ErrorBoundary } from "@/shared/analytics/ErrorBoundary";
 import { I18nProvider } from "./providers/I18nProvider";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { useAutoSave } from "@/features/persistence/useAutoSave";
+import { WebMcpConfirmDialog } from "@/app/webmcp/WebMcpConfirmDialog";
 import { LandingPage } from "@/pages/landing/LandingPage";
 
 // 路由级代码分割：编辑器（含分页测量、富文本、撤销栈等重逻辑）按需加载，
@@ -48,6 +49,7 @@ export function App() {
       <ToastProvider>
         <I18nProvider>
           <AutoSaveGate />
+          <WebMcpConfirmDialog />
           <BrowserRouter basename="/resume/">
             <AnalyticsTracker />
             <ErrorBoundary>

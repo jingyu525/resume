@@ -23,7 +23,7 @@
 
 ```
 src/
-├── app/                 # 初始化：providers(I18n/Theme/Toast)、router、全局样式与入口
+├── app/                 # 初始化：providers(I18n/Theme/Toast)、router、webmcp（工具注册）、入口
 ├── pages/               # 路由页：landing（营销）、editor（编辑器）
 ├── widgets/             # 组合区块：landing-hero/features/footer、editor-toolbar/preview-pane
 ├── features/            # 用户可感知能力（高内聚、可独立演进）
@@ -102,7 +102,33 @@ UI 文案由 `shared/i18n/dictionaries` 五语（中/英/日/德/韩）字典驱
 全程无后端、无账号、无上传。
 
 ### 5.7 打印导出（FR-8）
-`print-export` 调用默认导出器（pdf-generate，一键导出 PDF 文件）；`globals.css` 的 `@page A4` 与 `.print-area`/`.no-print` 规则保证仅输出 A4 页面，屏幕专属元素不上纸。
+`print-export` 调用默认导出器（pdf-generate，一键导出 PDF）；`globals.css` 的 `@page A4` 与 `.print-area`/`.no-print` 规则保证仅输出 A4 页面，屏幕专属元素不上纸。
+
+### 5.8 WebMCP：把应用能力暴露给浏览器内的 AI 代理
+
+[WebMCP](https://webmachinelearning.github.io/webmcp/) 是浏览器原生协议（`document.modelContext`，Chrome 149+ 源试用），让网页把功能声明为 AI 代理可调用的工具。本应用把它当作**渐进增强**接入：`src/app/webmcp/` 注册 7 个工具，协议不可用时静默跳过，应用行为与从前完全一致。
+
+放在 `app/` 而不是 `features/`：注册逻辑要同时引用 `store`、`features/print-export`、`features/backup-io` 与 `plugins` 注册表——`features` 之间禁止横向依赖（见 §3），只有 `app` 这个组装层可以合法跨模块取用。同时它也没有 UI 与之绑定，不适合放 `widgets/`。
+
+| 工具 | 类型 | 说明 |
+| --- | --- | --- |
+| `get_resume` | 只读 | 简历 + 外观 + 当前语言 |
+| `list_sections` | 只读 | 章节 kind / 标题 / 可见性 / 是否为空 |
+| `update_basics` | 写 | 姓名、职位、联系方式 |
+| `set_locale` | 写 | 切换界面语言 |
+| `set_appearance` | 写 | 主色 / 版式 / 气质 / 明暗 |
+| `export_pdf` | 动作 | 导出 A4 PDF |
+| `export_backup` | 动作 | 导出 JSON 备份 |
+
+三条硬约束：
+
+1. **协议字段不写死**：现行规范挂 `document.modelContext`（`registerTool()`），早期草案挂 `navigator.modelContext`（`provideContext()`）；两者都探测，任一可用即可工作，两个都没有则返回 `false` 静默降级。
+2. **写操作必须先经用户确认**：`update_basics` 在写 store **之前** await `confirm.ts` 的确认闸门，由 `WebMcpConfirmDialog` 把变更摘要摆到用户面前，同意才落库（**绝不"先写再问"**）。协议自带的 `consequentialHint` 只是"告诉代理这是重大操作"，是否真拦下来取决于浏览器实现——本应用不把"用户知情"外包给代理。弹窗关闭（Esc / 点遮罩 / 关闭按钮）一律按**拒绝**处理：对写操作而言，"没明确同意"必须按拒绝算。并发写请求只处理一个，后到者立即被拒——排队会让代理无限期挂起却不知道自己卡在什么上。
+3. **只暴露既有能力，不新增数据通路**：所有写操作都走 store action，因此照样进撤销历史、照样被自动保存；全程零网络请求（`verify:rules` 的 S1 保持 0 命中），与"本地优先、无后端"定位一致。
+
+工具描述固定用英文：它面向跨语言代理，不能随界面语言变化（同一工具的描述在会话中途换语言会让代理认知混乱）；界面文案仍全部走 i18n 字典（规则 I1）。非法输入返回**可操作**的错误信息（如 `Unknown accent "Neon". Available: Classic Blue, Sky, ...`）而不是抛异常。
+
+与产品定位的边界：PRD 把"AI 代写"列为表达禁区，而 WebMCP **本身不提供任何 AI 能力**——它只是让用户自己浏览器里的代理去调用应用已有的功能，属于"把既有 UI 变成可编程接口"（可访问性 / 自动化）。代理能改字段，但每次改写都要用户当面点头。
 
 ## 6. 安全约束落实（NFR-3）
 - 富文本唯一清洗入口在 `shared/lib/sanitize`，全应用统一调用。
@@ -113,7 +139,7 @@ UI 文案由 `shared/i18n/dictionaries` 五语（中/英/日/德/韩）字典驱
 语义化结构、关键控件有 `aria-label`/`title`、`contentEditable` 声明 `role="textbox"`/`aria-multiline`，键盘可达（Tab/撤销快捷键）。
 
 ## 8. 测试与质量
-- Vitest 覆盖核心纯逻辑：`sanitize`（XSS 清洗）、`distributeBlocks`（单块不跨页/标题不孤行）、`i18n` 回退链、`undo-merge`（连续打字合并、语言不进历史、撤销恢复）、`migrations`（损坏数据/非法语言/校验）。
+- Vitest 覆盖核心纯逻辑：`sanitize`（XSS 清洗）、`distributeBlocks`（单块不跨页/标题不孤行）、`i18n` 回退链、`undo-merge`（连续打字合并、语言不进历史、撤销恢复）、`migrations`（损坏数据/非法语言/校验）、`webmcp`（工具契约、写操作确认闸门与并发拒绝、注册与降级）。
 - 提交门槛：`tsc --noEmit`、`vite build`、`eslint .`、`vitest run` 均通过。
 
 ## 9. 与计划的技术偏差（已决策）
